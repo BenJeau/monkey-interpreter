@@ -16,6 +16,8 @@ pub enum Token {
 
     LessThan,
     GreaterThan,
+    Equal,
+    NotEqual,
 
     // Delimiters
     Comma,
@@ -69,16 +71,38 @@ impl Lexer {
         self.read_position += 1;
     }
 
+    pub fn peek_char(&mut self) -> Option<char> {
+        if self.read_position >= self.input.len() {
+            None
+        } else {
+            self.chars.get(self.read_position).copied()
+        }
+    }
+
     pub fn next_token(&mut self) -> Token {
         let Some(ch) = self.ch else {
             return Token::Eof;
         };
 
         let token = match ch {
-            '=' => Token::EqualSign,
+            '=' => {
+                if self.peek_char() == Some('=') {
+                    self.read_char();
+                    Token::Equal
+                } else {
+                    Token::EqualSign
+                }
+            }
             '+' => Token::PlusSign,
             '-' => Token::MinusSign,
-            '!' => Token::ExclamationMark,
+            '!' => {
+                if self.peek_char() == Some('=') {
+                    self.read_char();
+                    Token::NotEqual
+                } else {
+                    Token::ExclamationMark
+                }
+            }
             '*' => Token::Asterisk,
             '/' => Token::Slash,
             '<' => Token::LessThan,
@@ -151,12 +175,14 @@ let result = add(five, ten);
 !-/*5;
 5 < 10 > 5;
 
-
 if (5 < 10) {
     return true;
 } else {
     return false;
-}"#;
+}
+
+10 == 10;
+10 != 9;"#;
 
         let tests = &[
             Token::Let,
@@ -224,6 +250,14 @@ if (5 < 10) {
             Token::False,
             Token::Semicolon,
             Token::RightBrace,
+            Token::Integer(10),
+            Token::Equal,
+            Token::Integer(10),
+            Token::Semicolon,
+            Token::Integer(10),
+            Token::NotEqual,
+            Token::Integer(9),
+            Token::Semicolon,
             Token::Eof,
         ];
 
