@@ -48,6 +48,22 @@ pub struct Lexer {
     position: usize,
     read_position: usize,
     ch: Option<char>,
+    reached_eof: bool,
+}
+
+impl Iterator for Lexer {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let token = self.next_token();
+        if token == Token::Eof {
+            if self.reached_eof {
+                return None;
+            }
+            self.reached_eof = true;
+        }
+        Some(token)
+    }
 }
 
 impl Lexer {
