@@ -9,6 +9,13 @@ pub enum Token {
     // Operators
     EqualSign,
     PlusSign,
+    MinusSign,
+    ExclamationMark,
+    Asterisk,
+    Slash,
+
+    LessThan,
+    GreaterThan,
 
     // Delimiters
     Comma,
@@ -21,6 +28,11 @@ pub enum Token {
     // Keywords
     Let,
     Function,
+    True,
+    False,
+    If,
+    Else,
+    Return,
 
     // Other
     Eof,
@@ -63,14 +75,20 @@ impl Lexer {
         };
 
         let token = match ch {
-            ';' => Token::Semicolon,
             '=' => Token::EqualSign,
             '+' => Token::PlusSign,
+            '-' => Token::MinusSign,
+            '!' => Token::ExclamationMark,
+            '*' => Token::Asterisk,
+            '/' => Token::Slash,
+            '<' => Token::LessThan,
+            '>' => Token::GreaterThan,
             '(' => Token::LeftParen,
             ')' => Token::RightParen,
             '{' => Token::LeftBrace,
             '}' => Token::RightBrace,
             ',' => Token::Comma,
+            ';' => Token::Semicolon,
             ' ' | '\t' | '\n' | '\r' => {
                 self.read_char();
                 return self.next_token();
@@ -121,10 +139,13 @@ mod tests {
 let ten = 10;
 
 let add = fn(x, y) {
-    x + y;
+     x + y;
 };
 
-let result = add(five, ten);"#;
+let result = add(five, ten);
+!-/*5;
+5 < 10 > 5;
+"#;
 
         let tests = &[
             Token::Let,
@@ -163,6 +184,19 @@ let result = add(five, ten);"#;
             Token::Identifier("ten".into()),
             Token::RightParen,
             Token::Semicolon,
+            Token::ExclamationMark,
+            Token::MinusSign,
+            Token::Slash,
+            Token::Asterisk,
+            Token::Integer(5),
+            Token::Semicolon,
+            Token::Integer(5),
+            Token::LessThan,
+            Token::Integer(10),
+            Token::GreaterThan,
+            Token::Integer(5),
+            Token::Semicolon,
+            Token::Eof,
         ];
 
         let mut lexer = Lexer::new(input.into());
