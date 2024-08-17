@@ -98,6 +98,11 @@ impl Lexer {
                 return match identifier.as_str() {
                     "let" => Token::Let,
                     "fn" => Token::Function,
+                    "if" => Token::If,
+                    "else" => Token::Else,
+                    "return" => Token::Return,
+                    "true" => Token::True,
+                    "false" => Token::False,
                     _ => Token::Identifier(identifier),
                 };
             }
@@ -145,7 +150,13 @@ let add = fn(x, y) {
 let result = add(five, ten);
 !-/*5;
 5 < 10 > 5;
-"#;
+
+
+if (5 < 10) {
+    return true;
+} else {
+    return false;
+}"#;
 
         let tests = &[
             Token::Let,
@@ -196,6 +207,23 @@ let result = add(five, ten);
             Token::GreaterThan,
             Token::Integer(5),
             Token::Semicolon,
+            Token::If,
+            Token::LeftParen,
+            Token::Integer(5),
+            Token::LessThan,
+            Token::Integer(10),
+            Token::RightParen,
+            Token::LeftBrace,
+            Token::Return,
+            Token::True,
+            Token::Semicolon,
+            Token::RightBrace,
+            Token::Else,
+            Token::LeftBrace,
+            Token::Return,
+            Token::False,
+            Token::Semicolon,
+            Token::RightBrace,
             Token::Eof,
         ];
 
