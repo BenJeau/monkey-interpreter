@@ -444,7 +444,7 @@ impl Parser {
 
 #[derive(Default)]
 pub struct Program {
-    statements: Vec<Statement>,
+    pub statements: Vec<Statement>,
 }
 
 impl ToString for Program {
