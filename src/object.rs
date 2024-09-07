@@ -2,6 +2,7 @@
 pub enum Object {
     Integer(isize),
     Boolean(bool),
+    Return(Box<Object>),
     Null,
 }
 
@@ -10,6 +11,7 @@ impl Object {
         match self {
             Object::Integer(value) => value.to_string(),
             Object::Boolean(value) => value.to_string(),
+            Object::Return(value) => value.inspect(),
             Object::Null => "null".into(),
         }
     }

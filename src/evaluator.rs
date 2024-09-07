@@ -1,18 +1,37 @@
 use crate::{
-    ast::{Expression, Statement},
+    ast::{BlockStatement, Expression, Statement},
     lexer::Token,
     object::Object,
+    parser::Program,
 };
 
 const NULL: Object = Object::Null;
 const TRUE: Object = Object::Boolean(true);
 const FALSE: Object = Object::Boolean(false);
 
-pub fn eval_statements(statements: &[Statement]) -> Option<Object> {
+pub fn eval_program(program: &Program) -> Option<Object> {
+    let mut result = None;
+
+    for statement in program.statements.iter() {
+        result = eval_statement(statement);
+
+        if let Some(Object::Return(value)) = result {
+            return Some(*value);
+        }
+    }
+
+    result
+}
+
+fn eval_statements(statements: &[Statement]) -> Option<Object> {
     let mut result = None;
 
     for statement in statements {
         result = eval_statement(statement);
+
+        if matches!(result, Some(Object::Return(_))) {
+            return result;
+        }
     }
 
     result
@@ -21,6 +40,7 @@ pub fn eval_statements(statements: &[Statement]) -> Option<Object> {
 fn eval_statement(statement: &Statement) -> Option<Object> {
     match statement {
         Statement::Expression { value } => eval_expression(value),
+        Statement::Return { value } => eval_expression(value).map(Box::new).map(Object::Return),
         _ => None,
     }
 }
@@ -157,10 +177,7 @@ mod tests {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
 
-            assert_eq!(
-                eval_statements(&program.statements),
-                Some(Object::Integer(expected))
-            );
+            assert_eq!(eval_program(&program), Some(Object::Integer(expected)));
         }
     }
 
@@ -195,7 +212,7 @@ mod tests {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
 
-            assert_eq!(eval_statements(&program.statements), Some(expected));
+            assert_eq!(eval_program(&program), Some(expected));
         }
     }
 
@@ -214,10 +231,7 @@ mod tests {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
 
-            assert_eq!(
-                eval_statements(&program.statements),
-                Some(Object::Boolean(expected))
-            );
+            assert_eq!(eval_program(&program), Some(Object::Boolean(expected)));
         }
     }
 
@@ -238,8 +252,36 @@ mod tests {
             let program = parser.parse_program().expect("Failed to parse program");
 
             assert_eq!(
-                eval_statements(&program.statements),
+                eval_program(&program),
                 Some(expected.clone()),
+                "test {}",
+                index
+            );
+        }
+    }
+
+    #[test]
+    fn test_return_statements() {
+        let tests = &[
+            "return 10;",
+            "return 10; 9;",
+            "return 2 * 5; 9;",
+            "9; return 2 * 5; 9;",
+            r#"if (10 > 1) {
+                if (10 > 1) {
+                    return 10;
+                }
+                return 1;
+            }"#,
+        ];
+
+        for (index, input) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(
+                eval_program(&program),
+                Some(Object::Integer(10)),
                 "test {}",
                 index
             );

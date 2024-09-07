@@ -27,7 +27,7 @@ pub fn repl() -> Result<(), std::io::Error> {
             continue;
         }
 
-        let evaluated = evaluator::eval_statements(&program.statements);
+        let evaluated = evaluator::eval_program(&program);
         if let Some(evaluated) = evaluated {
             println!("{}", evaluated.inspect());
         }
