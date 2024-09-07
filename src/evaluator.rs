@@ -3,6 +3,9 @@ use crate::{
     object::Object,
 };
 
+const TRUE: Object = Object::Boolean(true);
+const FALSE: Object = Object::Boolean(false);
+
 pub fn eval_statements(statements: &[Statement]) -> Option<Object> {
     let mut result = None;
 
@@ -23,8 +26,16 @@ fn eval_statement(statement: &Statement) -> Option<Object> {
 fn eval_expression(expression: &Expression) -> Option<Object> {
     match expression {
         Expression::Integer(value) => Some(Object::Integer(*value)),
-        Expression::Boolean(value) => Some(Object::Boolean(*value)),
+        Expression::Boolean(value) => Some(native_boolean_to_boolean_object(*value)),
         _ => None,
+    }
+}
+
+fn native_boolean_to_boolean_object(value: bool) -> Object {
+    if value {
+        TRUE
+    } else {
+        FALSE
     }
 }
 
