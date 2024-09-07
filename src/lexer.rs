@@ -1,4 +1,6 @@
-#[derive(PartialEq, Eq, Debug)]
+use crate::parser::ExpressionPrecedence;
+
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Token {
     // Literals
     Integer(isize),
@@ -28,17 +30,72 @@ pub enum Token {
     RightBrace,
 
     // Keywords
-    Let,
     Function,
     True,
     False,
     If,
     Else,
+
+    // Statements
+    Let,
     Return,
 
     // Other
     Eof,
     Illegal(char),
+}
+
+impl Token {
+    pub fn precedence(&self) -> ExpressionPrecedence {
+        match self {
+            Token::PlusSign => ExpressionPrecedence::SUM,
+            Token::MinusSign => ExpressionPrecedence::SUM,
+            Token::Asterisk => ExpressionPrecedence::PRODUCT,
+            Token::Slash => ExpressionPrecedence::PRODUCT,
+            Token::LessThan => ExpressionPrecedence::LESSGREATER,
+            Token::GreaterThan => ExpressionPrecedence::LESSGREATER,
+            Token::Equal => ExpressionPrecedence::EQUALS,
+            Token::NotEqual => ExpressionPrecedence::EQUALS,
+            token => {
+                println!("no precedence for token {token:?}, defaulting to LOWEST");
+                ExpressionPrecedence::LOWEST
+            }
+        }
+    }
+}
+
+impl ToString for Token {
+    fn to_string(&self) -> String {
+        match self {
+            Token::Integer(i) => format!("{i}"),
+            Token::Identifier(i) => i.into(),
+            Token::EqualSign => "=".into(),
+            Token::PlusSign => "+".into(),
+            Token::MinusSign => "-".into(),
+            Token::ExclamationMark => "!".into(),
+            Token::Asterisk => "*".into(),
+            Token::Slash => "/".into(),
+            Token::LessThan => "<".into(),
+            Token::GreaterThan => ">".into(),
+            Token::Equal => "==".into(),
+            Token::NotEqual => "!=".into(),
+            Token::Comma => ",".into(),
+            Token::Semicolon => ";".into(),
+            Token::LeftParen => "(".into(),
+            Token::RightParen => ")".into(),
+            Token::LeftBrace => "{".into(),
+            Token::RightBrace => "}".into(),
+            Token::Function => "fn".into(),
+            Token::True => "true".into(),
+            Token::False => "false".into(),
+            Token::If => "if".into(),
+            Token::Else => "else".into(),
+            Token::Let => "let".into(),
+            Token::Return => "return".into(),
+            Token::Eof => "".into(),
+            Token::Illegal(c) => c.to_string(),
+        }
+    }
 }
 
 #[derive(Default)]
