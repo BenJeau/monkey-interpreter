@@ -57,10 +57,7 @@ impl Token {
             Token::Equal => ExpressionPrecedence::EQUALS,
             Token::NotEqual => ExpressionPrecedence::EQUALS,
             Token::LeftParen => ExpressionPrecedence::CALL,
-            token => {
-                println!("no precedence for token {token:?}, defaulting to LOWEST");
-                ExpressionPrecedence::LOWEST
-            }
+            _ => ExpressionPrecedence::LOWEST,
         }
     }
 }

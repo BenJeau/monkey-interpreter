@@ -4,11 +4,11 @@ use crate::{
 };
 
 #[derive(Default)]
-struct Parser {
+pub struct Parser {
     lexer: Lexer,
     current_token: Option<Token>,
     peek_token: Option<Token>,
-    errors: Vec<String>,
+    pub errors: Vec<String>,
 }
 
 #[derive(PartialEq, Eq, Default, PartialOrd, Ord, Debug)]
@@ -93,15 +93,9 @@ impl Parser {
         // TODO: unsure if the correct precendence here
         let value = self.parse_expression(ExpressionPrecedence::LOWEST)?;
 
-        if self.peek_token != Some(Token::Semicolon) {
-            self.errors.push(format!(
-                "expected next token to be Semicolon, got {:?}",
-                self.current_token,
-            ));
-            return None;
+        if self.peek_token == Some(Token::Semicolon) {
+            self.next_token();
         };
-
-        self.next_token();
 
         Some(Statement::Let {
             name: name.into(),
@@ -115,15 +109,9 @@ impl Parser {
         // TODO: unsure if the correct precendence here
         let value = self.parse_expression(ExpressionPrecedence::LOWEST)?;
 
-        if self.peek_token != Some(Token::Semicolon) {
-            self.errors.push(format!(
-                "expected next token to be Semicolon, got {:?}",
-                self.current_token,
-            ));
-            return None;
+        if self.peek_token == Some(Token::Semicolon) {
+            self.next_token();
         };
-
-        self.next_token();
 
         Some(Statement::Return { value })
     }
@@ -201,25 +189,25 @@ impl Parser {
             Some(Token::MinusSign) | Some(Token::PlusSign) | Some(Token::ExclamationMark)
         ));
 
-        let operator = self.current_token.clone().unwrap();
+        let operator = self.current_token.clone()?;
 
         self.next_token();
 
         Some(Expression::PrefixOperator {
             operator,
-            expression: Box::new(self.parse_expression(ExpressionPrecedence::PREFIX).unwrap()),
+            expression: Box::new(self.parse_expression(ExpressionPrecedence::PREFIX)?),
         })
     }
 
     fn parse_infix_expression(&mut self, lh_expression: Expression) -> Option<Expression> {
-        let operator = self.current_token.clone().unwrap();
+        let operator = self.current_token.clone()?;
         let precedence = self.current_precedence();
 
         self.next_token();
 
         Some(Expression::InfixOperator {
             operator,
-            rh_expression: Box::new(self.parse_expression(precedence).unwrap()),
+            rh_expression: Box::new(self.parse_expression(precedence)?),
             lh_expression: Box::new(lh_expression),
         })
     }
@@ -455,7 +443,7 @@ impl Parser {
 }
 
 #[derive(Default)]
-struct Program {
+pub struct Program {
     statements: Vec<Statement>,
 }
 
