@@ -1,10 +1,12 @@
 use std::io::Write;
 
-use crate::{evaluator, lexer, parser};
+use crate::{environment::Environment, evaluator, lexer, parser};
 
 const PROMPT: &str = "λ> ";
 
 pub fn repl() -> Result<(), std::io::Error> {
+    let mut environment = Environment::new();
+
     loop {
         print!("{PROMPT}");
         std::io::stdout().flush()?;
@@ -27,7 +29,7 @@ pub fn repl() -> Result<(), std::io::Error> {
             continue;
         }
 
-        let evaluated = evaluator::eval_program(&program);
+        let evaluated = evaluator::eval_program(&program, &mut environment);
         if let Some(evaluated) = evaluated {
             println!("{}", evaluated.inspect());
         }

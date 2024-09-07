@@ -1,5 +1,6 @@
 use crate::{
     ast::{Expression, Statement},
+    environment::{self, Environment},
     lexer::Token,
     object::Object,
     parser::Program,
@@ -9,11 +10,11 @@ const NULL: Object = Object::Null;
 const TRUE: Object = Object::Boolean(true);
 const FALSE: Object = Object::Boolean(false);
 
-pub fn eval_program(program: &Program) -> Option<Object> {
+pub fn eval_program(program: &Program, environment: &mut Environment) -> Option<Object> {
     let mut result = None;
 
     for statement in program.statements.iter() {
-        result = eval_statement(statement);
+        result = eval_statement(statement, environment);
 
         if let Some(Object::Return(value)) = result {
             return Some(*value);
@@ -25,11 +26,11 @@ pub fn eval_program(program: &Program) -> Option<Object> {
     result
 }
 
-fn eval_statements(statements: &[Statement]) -> Option<Object> {
+fn eval_statements(statements: &[Statement], environment: &mut Environment) -> Option<Object> {
     let mut result = None;
 
     for statement in statements {
-        result = eval_statement(statement);
+        result = eval_statement(statement, environment);
 
         if matches!(result, Some(Object::Return(_) | Object::Error(_))) {
             return result;
@@ -39,23 +40,39 @@ fn eval_statements(statements: &[Statement]) -> Option<Object> {
     result
 }
 
-fn eval_statement(statement: &Statement) -> Option<Object> {
+fn eval_statement(statement: &Statement, environment: &mut Environment) -> Option<Object> {
     match statement {
-        Statement::Expression { value } => eval_expression(value),
+        Statement::Expression { value } => eval_expression(value, environment),
         Statement::Return { value } => {
-            let value = eval_expression(value);
+            let value = eval_expression(value, environment);
             if matches!(value, Some(Object::Error(_))) {
                 value
             } else {
                 value.map(Box::new).map(Object::Return)
             }
         }
-        _ => None,
+        Statement::Let { name, value } => {
+            let value = eval_expression(value, environment)?;
+            if matches!(value, Object::Error(_)) {
+                return Some(value);
+            }
+
+            environment.set(name.clone(), value);
+
+            None
+        }
     }
 }
 
-fn eval_expression(expression: &Expression) -> Option<Object> {
+fn eval_expression(expression: &Expression, environment: &mut Environment) -> Option<Object> {
     match expression {
+        Expression::Identifier(name) => {
+            if let Some(value) = environment.get(name) {
+                Some(value.clone())
+            } else {
+                Some(Object::Error(format!("Identifier not found: {}", name)))
+            }
+        }
         Expression::Integer(value) => Some(Object::Integer(*value)),
         Expression::Boolean(value) => Some(native_boolean_to_boolean_object(*value)),
         Expression::Null => Some(NULL),
@@ -63,7 +80,7 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             operator,
             expression,
         } => {
-            let value = eval_expression(expression)?;
+            let value = eval_expression(expression, environment)?;
             if matches!(value, Object::Error(_)) {
                 return Some(value);
             }
@@ -74,11 +91,11 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             lh_expression,
             rh_expression,
         } => {
-            let lh_value = eval_expression(lh_expression)?;
+            let lh_value = eval_expression(lh_expression, environment)?;
             if matches!(lh_value, Object::Error(_)) {
                 return Some(lh_value);
             }
-            let rh_value = eval_expression(rh_expression)?;
+            let rh_value = eval_expression(rh_expression, environment)?;
             if matches!(rh_value, Object::Error(_)) {
                 return Some(rh_value);
             }
@@ -89,14 +106,14 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             consequence,
             alternative,
         } => {
-            let condition = eval_expression(condition)?;
+            let condition = eval_expression(condition, environment)?;
             if matches!(condition, Object::Error(_)) {
                 return Some(condition);
             }
             if is_truthy(condition) {
-                eval_statements(&consequence.statements)
+                eval_statements(&consequence.statements, environment)
             } else if let Some(alternative) = alternative {
-                eval_statements(&alternative.statements)
+                eval_statements(&alternative.statements, environment)
             } else {
                 Some(NULL)
             }
@@ -213,8 +230,12 @@ mod tests {
         for (input, expected) in tests.into_iter().cloned() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
 
-            assert_eq!(eval_program(&program), Some(Object::Integer(expected)));
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(Object::Integer(expected))
+            );
         }
     }
 
@@ -246,8 +267,9 @@ mod tests {
         for (input, expected) in tests.into_iter().cloned() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
 
-            assert_eq!(eval_program(&program), Some(expected));
+            assert_eq!(eval_program(&program, &mut environment), Some(expected));
         }
     }
 
@@ -265,8 +287,12 @@ mod tests {
         for (input, expected) in tests.into_iter().cloned() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
 
-            assert_eq!(eval_program(&program), Some(Object::Boolean(expected)));
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(Object::Boolean(expected))
+            );
         }
     }
 
@@ -285,9 +311,10 @@ mod tests {
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program),
+                eval_program(&program, &mut environment),
                 Some(expected.clone()),
                 "test {}",
                 index
@@ -313,9 +340,10 @@ mod tests {
         for (index, input) in tests.into_iter().cloned().enumerate() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program),
+                eval_program(&program, &mut environment),
                 Some(Object::Integer(10)),
                 "test {}",
                 index
@@ -330,7 +358,10 @@ mod tests {
             ("5 + true; 5;", "Type mismatch: INTEGER + BOOLEAN"),
             ("-true", "Unknown operator: -BOOLEAN"),
             ("true + false", "Unknown operator: BOOLEAN + BOOLEAN"),
-            ("a; true + false; 5", "Unknown operator: BOOLEAN + BOOLEAN"),
+            (
+                "let a = 234; true + false; 5",
+                "Unknown operator: BOOLEAN + BOOLEAN",
+            ),
             (
                 "if (10 > 1) { return true + false; }",
                 "Unknown operator: BOOLEAN + BOOLEAN",
@@ -344,15 +375,43 @@ mod tests {
             }"#,
                 "Unknown operator: BOOLEAN + BOOLEAN",
             ),
+            ("foobar", "Identifier not found: foobar"),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program),
+                eval_program(&program, &mut environment),
                 Some(Object::Error(expected.into())),
+                "test {}",
+                index
+            );
+        }
+    }
+
+    #[test]
+    fn test_let_statements() {
+        let tests = &[
+            ("let a = 5; a;", Object::Integer(5)),
+            ("let a = 5 * 5; a;", Object::Integer(25)),
+            ("let a = 5; let b = a; b;", Object::Integer(5)),
+            (
+                "let a = 5; let b = a; let c = a + b + 5; c;",
+                Object::Integer(15),
+            ),
+        ];
+
+        for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
+
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(expected.clone()),
                 "test {}",
                 index
             );
