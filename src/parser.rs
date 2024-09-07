@@ -149,6 +149,7 @@ impl Parser {
             Token::ExclamationMark => self.parse_prefix_expression(),
             Token::LeftParen => self.parse_grouped_expression(),
             Token::If => self.parse_if_expression(),
+            Token::Function => self.parse_function_literal(),
             token => {
                 self.errors.push(format!(
                     "no expression statement parser for {}",
@@ -292,6 +293,86 @@ impl Parser {
             consequence,
             alternative,
         });
+    }
+
+    fn parse_function_literal(&mut self) -> Option<Expression> {
+        let current_token = self.current_token.clone()?;
+
+        if self.peek_token != Some(Token::LeftParen) {
+            self.errors.push(format!(
+                "expected next token to be LeftParen, got {:?}",
+                self.peek_token
+            ));
+            return None;
+        };
+
+        self.next_token();
+
+        let parameters = self.parse_function_parameters()?;
+
+        if self.peek_token != Some(Token::LeftBrace) {
+            self.errors.push(format!(
+                "expected next token to be LeftBrace, got {:?}",
+                self.peek_token
+            ));
+            return None;
+        };
+
+        self.next_token();
+
+        let body = self.parse_block_statement()?;
+
+        Some(Expression::Function {
+            arguments: parameters,
+            body,
+        })
+    }
+
+    fn parse_function_parameters(&mut self) -> Option<Vec<String>> {
+        let mut parameters = Vec::new();
+
+        if self.peek_token == Some(Token::RightParen) {
+            self.next_token();
+            return Some(parameters);
+        };
+
+        self.next_token();
+
+        if let Some(Token::Identifier(name)) = self.current_token.clone() {
+            parameters.push(name);
+        } else {
+            self.errors.push(format!(
+                "expected next token to be Identifier, got {:?}",
+                self.current_token
+            ));
+            return None;
+        };
+
+        while self.peek_token == Some(Token::Comma) {
+            self.next_token();
+            self.next_token();
+            if let Some(Token::Identifier(name)) = self.current_token.clone() {
+                parameters.push(name);
+            } else {
+                self.errors.push(format!(
+                    "expected next token to be Identifier, got {:?}",
+                    self.current_token
+                ));
+                return None;
+            };
+        }
+
+        if self.peek_token != Some(Token::RightParen) {
+            self.errors.push(format!(
+                "expected next token to be RightParen, got {:?}",
+                self.peek_token
+            ));
+            return None;
+        };
+
+        self.next_token();
+
+        Some(parameters)
     }
 
     fn parse_block_statement(&mut self) -> Option<BlockStatement> {
@@ -714,5 +795,61 @@ return 993322;"#;
                 }
             }
         )
+    }
+
+    #[test]
+    fn test_function_literal_parsing() {
+        let input = "fn(x, y) { x + y }";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::Function {
+                    arguments: vec!["x".into(), "y".into()],
+                    body: BlockStatement {
+                        statements: vec![Statement::Expression {
+                            value: Expression::InfixOperator {
+                                operator: Token::PlusSign,
+                                lh_expression: Box::new(Expression::Identifier("x".into())),
+                                rh_expression: Box::new(Expression::Identifier("y".into()))
+                            }
+                        }]
+                    }
+                }
+            }
+        )
+    }
+
+    #[test]
+    fn test_funciton_parameters_parsing() {
+        let tests = &[
+            ("fn() {}", vec![]),
+            ("fn(x) {}", vec!["x".into()]),
+            ("fn(x, y, z) {}", vec!["x".into(), "y".into(), "z".into()]),
+        ];
+
+        for (input, arguments) in tests.into_iter().cloned() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+            assert_eq!(program.statements.len(), 1);
+
+            assert_eq!(
+                program.statements[0],
+                Statement::Expression {
+                    value: Expression::Function {
+                        arguments,
+                        body: BlockStatement { statements: vec![] }
+                    }
+                }
+            )
+        }
     }
 }

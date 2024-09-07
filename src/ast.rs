@@ -56,6 +56,10 @@ pub enum Expression {
         consequence: BlockStatement,
         alternative: Option<BlockStatement>,
     },
+    Function {
+        arguments: Vec<String>,
+        body: BlockStatement,
+    },
 }
 
 impl ToString for Expression {
@@ -107,6 +111,15 @@ impl ToString for Expression {
                     Some(alternative) => format!("else {}", alternative.to_string()),
                     None => "".into(),
                 }
+            ),
+            Self::Function { arguments, body } => format!(
+                "fn({}) {}",
+                arguments
+                    .iter()
+                    .map(|argument| argument.to_string())
+                    .collect::<Vec<_>>()
+                    .join(", "),
+                body.to_string()
             ),
         }
     }
