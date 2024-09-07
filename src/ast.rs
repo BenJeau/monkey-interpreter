@@ -1,6 +1,6 @@
 use crate::lexer::Token;
 
-#[derive(PartialEq, Eq, Debug)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub enum Statement {
     Let { name: String, value: Expression },
     Return { value: Expression },
@@ -14,6 +14,21 @@ impl ToString for Statement {
             Self::Return { value } => format!("return {};", value.to_string()),
             Self::Expression { value } => value.to_string(),
         }
+    }
+}
+
+#[derive(PartialEq, Eq, Debug, Clone)]
+pub struct BlockStatement {
+    pub statements: Vec<Statement>,
+}
+
+impl ToString for BlockStatement {
+    fn to_string(&self) -> String {
+        self.statements
+            .iter()
+            .map(ToString::to_string)
+            .collect::<Vec<_>>()
+            .join("")
     }
 }
 
@@ -35,6 +50,11 @@ pub enum Expression {
     FunctionCall {
         name: String,
         arguments: Vec<Box<Expression>>,
+    },
+    If {
+        condition: Box<Expression>,
+        consequence: BlockStatement,
+        alternative: Option<BlockStatement>,
     },
 }
 
@@ -75,6 +95,19 @@ impl ToString for Expression {
                         .join(",")
                 )
             }
+            Self::If {
+                condition,
+                consequence,
+                alternative,
+            } => format!(
+                "if{} {}{}",
+                condition.to_string(),
+                consequence.to_string(),
+                match alternative {
+                    Some(alternative) => format!("else {}", alternative.to_string()),
+                    None => "".into(),
+                }
+            ),
         }
     }
 }
