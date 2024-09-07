@@ -65,6 +65,10 @@ fn eval_integer_infix_expression(operator: &Token, lh_integer: isize, rh_integer
         Token::MinusSign => Object::Integer(lh_integer - rh_integer),
         Token::Asterisk => Object::Integer(lh_integer * rh_integer),
         Token::Slash => Object::Integer(lh_integer / rh_integer),
+        Token::LessThan => Object::Boolean(lh_integer < rh_integer),
+        Token::GreaterThan => Object::Boolean(lh_integer > rh_integer),
+        Token::Equal => Object::Boolean(lh_integer == rh_integer),
+        Token::NotEqual => Object::Boolean(lh_integer != rh_integer),
         _ => NULL,
     }
 }
@@ -145,6 +149,14 @@ mod tests {
             ("false", FALSE),
             ("-true", NULL),
             ("-false", NULL),
+            ("1 < 2", TRUE),
+            ("1 > 2", FALSE),
+            ("1 < 1", FALSE),
+            ("1 > 1", FALSE),
+            ("1 == 1", TRUE),
+            ("1 != 1", FALSE),
+            ("1 == 2", FALSE),
+            ("1 != 2", TRUE),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
