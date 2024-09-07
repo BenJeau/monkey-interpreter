@@ -37,7 +37,35 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             let value = eval_expression(expression)?;
             Some(eval_prefix_expression(operator, value))
         }
+        Expression::InfixOperator {
+            operator,
+            lh_expression,
+            rh_expression,
+        } => {
+            let lh_value = eval_expression(lh_expression)?;
+            let rh_value = eval_expression(rh_expression)?;
+            Some(eval_infix_expression(operator, lh_value, rh_value))
+        }
         _ => None,
+    }
+}
+
+fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -> Object {
+    match (lh_value, rh_value) {
+        (Object::Integer(lh_integer), Object::Integer(rh_integer)) => {
+            eval_integer_infix_expression(operator, lh_integer, rh_integer)
+        }
+        _ => NULL,
+    }
+}
+
+fn eval_integer_infix_expression(operator: &Token, lh_integer: isize, rh_integer: isize) -> Object {
+    match operator {
+        Token::PlusSign => Object::Integer(lh_integer + rh_integer),
+        Token::MinusSign => Object::Integer(lh_integer - rh_integer),
+        Token::Asterisk => Object::Integer(lh_integer * rh_integer),
+        Token::Slash => Object::Integer(lh_integer / rh_integer),
+        _ => NULL,
     }
 }
 
@@ -81,7 +109,23 @@ mod tests {
 
     #[test]
     fn test_eval_integer_expression() {
-        let tests = &[("5", 5), ("10", 10), ("-5", -5), ("-10", -10)];
+        let tests = &[
+            ("5", 5),
+            ("10", 10),
+            ("-5", -5),
+            ("-10", -10),
+            ("5 + 5 + 5 + 5 - 10", 10),
+            ("2 * 2 * 2 * 2 * 2", 32),
+            ("-50 + 100 + -50", 0),
+            ("5 * 2 + 10", 20),
+            ("5 + 2 * 10", 25),
+            ("20 + 2 * -10", 0),
+            ("50 / 2 * 2 + 10", 60),
+            ("2 * (5 + 10)", 30),
+            ("3 * 3 * 3 + 10", 37),
+            ("3 * (3 * 3) + 10", 37),
+            ("(5 + 10 * 2 + 15 / 3) * 2 + -10", 50),
+        ];
 
         for (input, expected) in tests.into_iter().cloned() {
             let mut parser = Parser::new(Lexer::new(input.into()));
