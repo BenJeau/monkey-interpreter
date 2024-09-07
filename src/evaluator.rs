@@ -55,6 +55,11 @@ fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -
         (Object::Integer(lh_integer), Object::Integer(rh_integer)) => {
             eval_integer_infix_expression(operator, lh_integer, rh_integer)
         }
+        (Object::Boolean(lh_boolean), Object::Boolean(rh_boolean)) => match operator {
+            Token::Equal => native_boolean_to_boolean_object(lh_boolean == rh_boolean),
+            Token::NotEqual => native_boolean_to_boolean_object(lh_boolean != rh_boolean),
+            _ => NULL,
+        },
         _ => NULL,
     }
 }
@@ -157,6 +162,16 @@ mod tests {
             ("1 != 1", FALSE),
             ("1 == 2", FALSE),
             ("1 != 2", TRUE),
+            ("true == true", TRUE),
+            ("false == false", TRUE),
+            ("true == false", FALSE),
+            ("false == true", FALSE),
+            ("true != false", TRUE),
+            ("false != true", TRUE),
+            ("(1 < 2) == true", TRUE),
+            ("(1 < 2) == false", FALSE),
+            ("(1 > 2) == true", FALSE),
+            ("(1 > 2) == false", TRUE),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
