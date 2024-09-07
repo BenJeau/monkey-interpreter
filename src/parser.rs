@@ -478,8 +478,8 @@ mod tests {
     #[test]
     fn test_let_statements() {
         let input = r#"let x = 5;
-let y = 10;
-let foobar = 838383;"#;
+let y = true;
+let foobar = y;"#;
         let mut parser = Parser::new(Lexer::new(input.into()));
         let program = parser.parse_program().expect("Failed to parse program");
 
@@ -497,14 +497,14 @@ let foobar = 838383;"#;
             program.statements[1],
             Statement::Let {
                 name: "y".into(),
-                value: 10.into(),
+                value: true.into(),
             }
         );
         assert_eq!(
             program.statements[2],
             Statement::Let {
                 name: "foobar".into(),
-                value: 838383.into()
+                value: Expression::Identifier("y".into())
             }
         );
     }
@@ -512,8 +512,8 @@ let foobar = 838383;"#;
     #[test]
     fn test_return_statements() {
         let input = r#"return 5;
-return 10;
-return 993322;"#;
+return y;
+return true;"#;
         let mut parser = Parser::new(Lexer::new(input.into()));
         let program = parser.parse_program().expect("Failed to parse program");
 
@@ -523,13 +523,13 @@ return 993322;"#;
         assert_eq!(program.statements[0], Statement::Return { value: 5.into() });
         assert_eq!(
             program.statements[1],
-            Statement::Return { value: 10.into() }
+            Statement::Return {
+                value: Expression::Identifier("y".into())
+            }
         );
         assert_eq!(
             program.statements[2],
-            Statement::Return {
-                value: 993322.into()
-            }
+            Statement::Return { value: true.into() }
         );
     }
 
