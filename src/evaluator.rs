@@ -133,10 +133,21 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                     eval_function(
                         inner_env,
                         &mut environment.clone(),
+                        Some(&name),
                         &parameters,
                         arguments,
                         body,
                     )
+                } else if name == "print" {
+                    arguments.iter().enumerate().for_each(|(index, argument)| {
+                        let value = eval_expression(argument, environment).unwrap_or(NULL);
+                        print!("{}", value.inspect());
+                        if index != arguments.len() - 1 {
+                            print!(" ");
+                        }
+                    });
+                    println!();
+                    None
                 } else {
                     Some(Object::Error(format!("Function not found: {}", name)))
                 }
@@ -145,8 +156,9 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 arguments: parameters,
                 body,
             } => eval_function(
-                &mut Default::default(),
+                &mut Environment::new(),
                 environment,
+                None,
                 &parameters,
                 arguments,
                 &body,
@@ -159,11 +171,12 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
 fn eval_function(
     fn_environment: &Environment,
     outer_environment: &mut Environment,
+    name: Option<&str>,
     parameters: &[String],
     arguments: &[Box<Expression>],
     body: &BlockStatement,
 ) -> Option<Object> {
-    let mut environment = fn_environment.new_child_base(&outer_environment);
+    let mut environment = fn_environment.new_child();
 
     for (param, expression) in parameters.iter().zip(arguments) {
         let value = eval_expression(expression, outer_environment)?;
@@ -171,6 +184,13 @@ fn eval_function(
             return Some(value);
         }
         environment.set(param.to_string(), value);
+    }
+
+    if let Some(name) = name {
+        environment.set(
+            name.to_string(),
+            outer_environment.get(name).unwrap().clone(),
+        );
     }
 
     let value = eval_statements(&body.statements, &mut environment);
@@ -535,6 +555,56 @@ mod tests {
         assert_eq!(
             eval_program(&program, &mut environment),
             Some(Object::Integer(4)),
+        );
+    }
+
+    #[test]
+    fn test_recursion() {
+        let input = r#"
+let fib = fn(n) {
+    if (n == 0) {
+        return 0;
+    }
+    
+    if (n == 1) {
+        return 1;
+    }
+
+    return fib(n - 1) + fib(n - 2);
+};
+
+fib(10);
+        "#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Integer(55)),
+        );
+    }
+
+    #[test]
+    fn test_function_doesnt_capture_global_future_environment() {
+        let input = r#"
+let test = fn(x) {
+    return data + x;
+};
+
+let data = 5;
+
+test(5);
+"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Error("Identifier not found: data".into())),
         );
     }
 }

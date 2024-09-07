@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::object::Object;
 
-#[derive(Default, PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone)]
 pub struct Environment {
     store: BTreeMap<String, Object>,
     parent: Option<Box<Environment>>,
@@ -10,19 +10,15 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            store: BTreeMap::new(),
+            parent: None,
+        }
     }
 
     pub fn new_child(&self) -> Self {
         Self {
             store: BTreeMap::new(),
-            parent: Some(Box::new(self.clone())),
-        }
-    }
-
-    pub fn new_child_base(&self, base: &Self) -> Self {
-        Self {
-            store: base.store.clone(),
             parent: Some(Box::new(self.clone())),
         }
     }
