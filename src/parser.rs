@@ -269,10 +269,28 @@ impl Parser {
 
         let consequence = self.parse_block_statement()?;
 
+        let alternative = if self.peek_token == Some(Token::Else) {
+            self.next_token();
+
+            if self.peek_token != Some(Token::LeftBrace) {
+                self.errors.push(format!(
+                    "expected next token to be LeftBrace, got {:?}",
+                    self.peek_token
+                ));
+                return None;
+            };
+
+            self.next_token();
+
+            self.parse_block_statement()
+        } else {
+            None
+        };
+
         return Some(Expression::If {
             condition: Box::new(condition),
             consequence,
-            alternative: None,
+            alternative,
         });
     }
 
@@ -659,6 +677,40 @@ return 993322;"#;
                         }]
                     },
                     alternative: None
+                }
+            }
+        )
+    }
+
+    #[test]
+    fn test_if_else_expression() {
+        let input = "if (x < y) { x } else { y }";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::If {
+                    condition: Box::new(Expression::InfixOperator {
+                        operator: Token::LessThan,
+                        lh_expression: Box::new(Expression::Identifier("x".into())),
+                        rh_expression: Box::new(Expression::Identifier("y".into()))
+                    }),
+                    consequence: BlockStatement {
+                        statements: vec![Statement::Expression {
+                            value: Expression::Identifier("x".into())
+                        }]
+                    },
+                    alternative: Some(BlockStatement {
+                        statements: vec![Statement::Expression {
+                            value: Expression::Identifier("y".into())
+                        }]
+                    })
                 }
             }
         )
