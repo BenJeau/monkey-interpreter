@@ -1,6 +1,6 @@
 use crate::{
-    ast::{Expression, Statement},
-    environment::{self, Environment},
+    ast::{BlockStatement, Expression, Statement},
+    environment::Environment,
     lexer::Token,
     object::Object,
     parser::Program,
@@ -75,7 +75,6 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
         }
         Expression::Integer(value) => Some(Object::Integer(*value)),
         Expression::Boolean(value) => Some(native_boolean_to_boolean_object(*value)),
-        Expression::Null => Some(NULL),
         Expression::PrefixOperator {
             operator,
             expression,
@@ -118,7 +117,68 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 Some(NULL)
             }
         }
-        _ => None,
+        Expression::Function { arguments, body } => Some(Object::Function {
+            parameters: arguments.clone(),
+            environment: environment.clone(),
+            body: body.clone(),
+        }),
+        Expression::FunctionCall { name, arguments } => match *name.clone() {
+            Expression::Identifier(name) => {
+                if let Some(Object::Function {
+                    parameters,
+                    environment: inner_env,
+                    body,
+                }) = environment.get(&name)
+                {
+                    eval_function(
+                        inner_env,
+                        &mut environment.clone(),
+                        &parameters,
+                        arguments,
+                        body,
+                    )
+                } else {
+                    Some(Object::Error(format!("Function not found: {}", name)))
+                }
+            }
+            Expression::Function {
+                arguments: parameters,
+                body,
+            } => eval_function(
+                &mut Default::default(),
+                environment,
+                &parameters,
+                arguments,
+                &body,
+            ),
+            _ => None,
+        },
+    }
+}
+
+fn eval_function(
+    fn_environment: &Environment,
+    outer_environment: &mut Environment,
+    parameters: &[String],
+    arguments: &[Box<Expression>],
+    body: &BlockStatement,
+) -> Option<Object> {
+    let mut environment = fn_environment.new_child();
+
+    for (param, expression) in parameters.iter().zip(arguments) {
+        let value = eval_expression(expression, outer_environment)?;
+        if matches!(value, Object::Error(_)) {
+            return Some(value);
+        }
+        environment.set(param.to_string(), value);
+    }
+
+    let value = eval_statements(&body.statements, &mut environment);
+
+    if let Some(Object::Return(value)) = value {
+        Some(*value)
+    } else {
+        value
     }
 }
 
@@ -416,5 +476,65 @@ mod tests {
                 index
             );
         }
+    }
+
+    #[test]
+    fn test_function_object() {
+        let input = "fn(x) { x + 2; }";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        let results = eval_program(&program, &mut environment).unwrap();
+
+        assert!(matches!(results, Object::Function { .. }));
+    }
+
+    #[test]
+    fn test_function_application() {
+        let tests = &[
+            ("let identity = fn(x) { x; }; identity(5);", 5),
+            ("let identity = fn(x) { return x; }; identity(5);", 5),
+            ("let double = fn(x) { x * 2; }; double(5);", 10),
+            ("let add = fn(x, y) { x + y; }; add(5, 5);", 10),
+            (
+                "let add = fn(x, y) { return x + y; }; add(5 + 5, add(5, 5));",
+                20,
+            ),
+            ("fn(x) { x; }(5)", 5),
+        ];
+
+        for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
+
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(Object::Integer(expected)),
+                "test {}",
+                index
+            );
+        }
+    }
+
+    #[test]
+    fn test_closures() {
+        let input = r#"
+    let newAdder = fn(x) {
+        fn(y) { x + y };
+    };
+    let addTwo = newAdder(2);
+    addTwo(2);"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Integer(4)),
+        );
     }
 }

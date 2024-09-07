@@ -288,8 +288,6 @@ impl Parser {
     }
 
     fn parse_function_literal(&mut self) -> Option<Expression> {
-        let current_token = self.current_token.clone()?;
-
         if self.peek_token != Some(Token::LeftParen) {
             self.errors.push(format!(
                 "expected next token to be LeftParen, got {:?}",
@@ -539,7 +537,7 @@ return true;"#;
                                 operator: Token::MinusSign,
                                 rh_expression: Box::new(Expression::PrefixOperator {
                                     operator: Token::ExclamationMark,
-                                    expression: Box::new(Expression::Null),
+                                    expression: Box::new(Expression::Identifier("null".into())),
                                 }),
                                 lh_expression: Box::new(false.into()),
                             }),

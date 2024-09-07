@@ -37,7 +37,6 @@ pub enum Expression {
     Integer(isize),
     Identifier(String),
     Boolean(bool),
-    Null,
     PrefixOperator {
         operator: Token,
         expression: Box<Expression>,
@@ -74,7 +73,6 @@ impl ToString for Expression {
                     "false".into()
                 }
             }
-            Self::Null => "null".into(),
             Self::PrefixOperator {
                 operator,
                 expression,
