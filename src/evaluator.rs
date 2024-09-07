@@ -46,8 +46,25 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             let rh_value = eval_expression(rh_expression)?;
             Some(eval_infix_expression(operator, lh_value, rh_value))
         }
+        Expression::If {
+            condition,
+            consequence,
+            alternative,
+        } => {
+            if is_truthy(eval_expression(&condition)?) {
+                eval_statements(&consequence.statements)
+            } else if let Some(alternative) = alternative {
+                eval_statements(&alternative.statements)
+            } else {
+                Some(NULL)
+            }
+        }
         _ => None,
     }
+}
+
+fn is_truthy(value: Object) -> bool {
+    !matches!(value, FALSE | NULL)
 }
 
 fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -> Object {
@@ -200,6 +217,31 @@ mod tests {
             assert_eq!(
                 eval_statements(&program.statements),
                 Some(Object::Boolean(expected))
+            );
+        }
+    }
+
+    #[test]
+    fn test_if_else_expression() {
+        let tests = &[
+            ("if (true) { 10 }", Object::Integer(10)),
+            ("if (false) { 10 }", NULL),
+            ("if (1) { 10 }", Object::Integer(10)),
+            ("if (1 < 2) { 10 }", Object::Integer(10)),
+            ("if (1 > 2) { 10 }", NULL),
+            ("if (1 > 2) { 10 } else { 20 }", Object::Integer(20)),
+            ("if (1 < 2) { 10 } else { 20 }", Object::Integer(10)),
+        ];
+
+        for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(
+                eval_statements(&program.statements),
+                Some(expected.clone()),
+                "test {}",
+                index
             );
         }
     }
