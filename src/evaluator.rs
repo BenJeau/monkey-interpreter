@@ -1,5 +1,5 @@
 use crate::{
-    ast::{BlockStatement, Expression, Statement},
+    ast::{Expression, Statement},
     lexer::Token,
     object::Object,
     parser::Program,
@@ -17,6 +17,8 @@ pub fn eval_program(program: &Program) -> Option<Object> {
 
         if let Some(Object::Return(value)) = result {
             return Some(*value);
+        } else if matches!(result, Some(Object::Error(_))) {
+            return result;
         }
     }
 
@@ -29,7 +31,7 @@ fn eval_statements(statements: &[Statement]) -> Option<Object> {
     for statement in statements {
         result = eval_statement(statement);
 
-        if matches!(result, Some(Object::Return(_))) {
+        if matches!(result, Some(Object::Return(_) | Object::Error(_))) {
             return result;
         }
     }
@@ -40,7 +42,14 @@ fn eval_statements(statements: &[Statement]) -> Option<Object> {
 fn eval_statement(statement: &Statement) -> Option<Object> {
     match statement {
         Statement::Expression { value } => eval_expression(value),
-        Statement::Return { value } => eval_expression(value).map(Box::new).map(Object::Return),
+        Statement::Return { value } => {
+            let value = eval_expression(value);
+            if matches!(value, Some(Object::Error(_))) {
+                value
+            } else {
+                value.map(Box::new).map(Object::Return)
+            }
+        }
         _ => None,
     }
 }
@@ -55,6 +64,9 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             expression,
         } => {
             let value = eval_expression(expression)?;
+            if matches!(value, Object::Error(_)) {
+                return Some(value);
+            }
             Some(eval_prefix_expression(operator, value))
         }
         Expression::InfixOperator {
@@ -63,7 +75,13 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             rh_expression,
         } => {
             let lh_value = eval_expression(lh_expression)?;
+            if matches!(lh_value, Object::Error(_)) {
+                return Some(lh_value);
+            }
             let rh_value = eval_expression(rh_expression)?;
+            if matches!(rh_value, Object::Error(_)) {
+                return Some(rh_value);
+            }
             Some(eval_infix_expression(operator, lh_value, rh_value))
         }
         Expression::If {
@@ -71,7 +89,11 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
             consequence,
             alternative,
         } => {
-            if is_truthy(eval_expression(&condition)?) {
+            let condition = eval_expression(condition)?;
+            if matches!(condition, Object::Error(_)) {
+                return Some(condition);
+            }
+            if is_truthy(condition) {
                 eval_statements(&consequence.statements)
             } else if let Some(alternative) = alternative {
                 eval_statements(&alternative.statements)
@@ -95,9 +117,17 @@ fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -
         (Object::Boolean(lh_boolean), Object::Boolean(rh_boolean)) => match operator {
             Token::Equal => native_boolean_to_boolean_object(lh_boolean == rh_boolean),
             Token::NotEqual => native_boolean_to_boolean_object(lh_boolean != rh_boolean),
-            _ => NULL,
+            _ => Object::Error(format!(
+                "Unknown operator: BOOLEAN {} BOOLEAN",
+                operator.to_string(),
+            )),
         },
-        _ => NULL,
+        (lh_value, rh_value) => Object::Error(format!(
+            "Type mismatch: {} {} {}",
+            lh_value.kind(),
+            operator.to_string(),
+            rh_value.kind()
+        )),
     }
 }
 
@@ -111,7 +141,10 @@ fn eval_integer_infix_expression(operator: &Token, lh_integer: isize, rh_integer
         Token::GreaterThan => Object::Boolean(lh_integer > rh_integer),
         Token::Equal => Object::Boolean(lh_integer == rh_integer),
         Token::NotEqual => Object::Boolean(lh_integer != rh_integer),
-        _ => NULL,
+        _ => Object::Error(format!(
+            "Unknown operator: INTEGER {} INTEGER",
+            operator.to_string()
+        )),
     }
 }
 
@@ -119,7 +152,11 @@ fn eval_prefix_expression(operator: &Token, value: Object) -> Object {
     match operator {
         Token::ExclamationMark => eval_bang_operator_expression(value),
         Token::MinusSign => eval_minus_sign_expression(value),
-        _ => value,
+        _ => Object::Error(format!(
+            "Unknown operator: {}{}",
+            operator.to_string(),
+            value.kind()
+        )),
     }
 }
 
@@ -135,7 +172,7 @@ fn eval_bang_operator_expression(value: Object) -> Object {
 fn eval_minus_sign_expression(value: Object) -> Object {
     match value {
         Object::Integer(value) => Object::Integer(-value),
-        _ => NULL,
+        _ => Object::Error(format!("Unknown operator: -{}", value.kind())),
     }
 }
 
@@ -186,8 +223,6 @@ mod tests {
         let tests = &[
             ("true", TRUE),
             ("false", FALSE),
-            ("-true", NULL),
-            ("-false", NULL),
             ("1 < 2", TRUE),
             ("1 > 2", FALSE),
             ("1 < 1", FALSE),
@@ -282,6 +317,42 @@ mod tests {
             assert_eq!(
                 eval_program(&program),
                 Some(Object::Integer(10)),
+                "test {}",
+                index
+            );
+        }
+    }
+
+    #[test]
+    fn test_error_handling() {
+        let tests = &[
+            ("5 + true;", "Type mismatch: INTEGER + BOOLEAN"),
+            ("5 + true; 5;", "Type mismatch: INTEGER + BOOLEAN"),
+            ("-true", "Unknown operator: -BOOLEAN"),
+            ("true + false", "Unknown operator: BOOLEAN + BOOLEAN"),
+            ("a; true + false; 5", "Unknown operator: BOOLEAN + BOOLEAN"),
+            (
+                "if (10 > 1) { return true + false; }",
+                "Unknown operator: BOOLEAN + BOOLEAN",
+            ),
+            (
+                r#"if (10 > 1) {
+                if (10 > 1) {
+                    return true + false;
+                }
+                return 1;
+            }"#,
+                "Unknown operator: BOOLEAN + BOOLEAN",
+            ),
+        ];
+
+        for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(
+                eval_program(&program),
+                Some(Object::Error(expected.into())),
                 "test {}",
                 index
             );
