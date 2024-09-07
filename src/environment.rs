@@ -20,6 +20,13 @@ impl Environment {
         }
     }
 
+    pub fn new_child_base(&self, base: &Self) -> Self {
+        Self {
+            store: base.store.clone(),
+            parent: Some(Box::new(self.clone())),
+        }
+    }
+
     pub fn set(&mut self, name: String, value: Object) {
         self.store.insert(name, value);
     }

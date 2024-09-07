@@ -66,6 +66,8 @@ fn eval_statement(statement: &Statement, environment: &mut Environment) -> Optio
 
 fn eval_expression(expression: &Expression, environment: &mut Environment) -> Option<Object> {
     match expression {
+        Expression::Integer(value) => Some(Object::Integer(*value)),
+        Expression::Boolean(value) => Some(native_boolean_to_boolean_object(*value)),
         Expression::Identifier(name) => {
             if let Some(value) = environment.get(name) {
                 Some(value.clone())
@@ -73,8 +75,6 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 Some(Object::Error(format!("Identifier not found: {}", name)))
             }
         }
-        Expression::Integer(value) => Some(Object::Integer(*value)),
-        Expression::Boolean(value) => Some(native_boolean_to_boolean_object(*value)),
         Expression::PrefixOperator {
             operator,
             expression,
@@ -163,7 +163,7 @@ fn eval_function(
     arguments: &[Box<Expression>],
     body: &BlockStatement,
 ) -> Option<Object> {
-    let mut environment = fn_environment.new_child();
+    let mut environment = fn_environment.new_child_base(&outer_environment);
 
     for (param, expression) in parameters.iter().zip(arguments) {
         let value = eval_expression(expression, outer_environment)?;
