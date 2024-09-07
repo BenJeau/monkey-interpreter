@@ -147,6 +147,7 @@ impl Parser {
             Token::PlusSign => self.parse_prefix_expression(),
             Token::MinusSign => self.parse_prefix_expression(),
             Token::ExclamationMark => self.parse_prefix_expression(),
+            Token::LeftParen => self.parse_grouped_expression(),
             token => {
                 self.errors.push(format!(
                     "no expression statement parser for {}",
@@ -215,6 +216,20 @@ impl Parser {
             rh_expression: Box::new(self.parse_expression(precedence).unwrap()),
             lh_expression: Box::new(lh_expression),
         })
+    }
+
+    fn parse_grouped_expression(&mut self) -> Option<Expression> {
+        self.next_token();
+
+        let expression = self.parse_expression(ExpressionPrecedence::LOWEST)?;
+
+        if self.peek_token != Some(Token::RightParen) {
+            return None;
+        };
+
+        self.next_token();
+
+        Some(expression)
     }
 
     fn peek_precedence(&self) -> ExpressionPrecedence {
@@ -540,6 +555,11 @@ return 993322;"#;
             ("false", "false"),
             ("3 > 5 == false", "((3 > 5) == false)"),
             ("3 < 5 == true", "((3 < 5) == true)"),
+            ("1 + (2 + 3) + 4", "((1 + (2 + 3)) + 4)"),
+            ("(5 + 5) * 2", "((5 + 5) * 2)"),
+            ("2 / (5 + 5)", "(2 / (5 + 5))"),
+            ("-(5 + 5)", "(-(5 + 5))"),
+            ("!(true == true)", "(!(true == true))"),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
