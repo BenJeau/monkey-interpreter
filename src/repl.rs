@@ -1,6 +1,6 @@
 use std::io::Write;
 
-use crate::{lexer, parser};
+use crate::{evaluator, lexer, parser};
 
 const PROMPT: &str = "λ> ";
 
@@ -27,6 +27,9 @@ pub fn repl() -> Result<(), std::io::Error> {
             continue;
         }
 
-        println!("{}", program.to_string());
+        let evaluated = evaluator::eval_statements(&program.statements);
+        if let Some(evaluated) = evaluated {
+            println!("{}", evaluated.inspect());
+        }
     }
 }
