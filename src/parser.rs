@@ -172,6 +172,10 @@ impl Parser {
                     self.next_token();
                     self.parse_infix_expression(left.clone())
                 }
+                Token::LeftParen => {
+                    self.next_token();
+                    self.parse_call_expression(left.clone())
+                }
                 _ => {
                     self.errors.push(format!(
                         "no infix statement parser for {}",
@@ -375,6 +379,48 @@ impl Parser {
         Some(parameters)
     }
 
+    fn parse_call_expression(&mut self, name: Expression) -> Option<Expression> {
+        Some(Expression::FunctionCall {
+            name: Box::new(name),
+            arguments: self.parse_call_arguments()?,
+        })
+    }
+
+    fn parse_call_arguments(&mut self) -> Option<Vec<Box<Expression>>> {
+        let mut arguments = Vec::new();
+
+        if self.peek_token == Some(Token::RightParen) {
+            self.next_token();
+            return Some(arguments);
+        };
+
+        self.next_token();
+
+        arguments.push(Box::new(
+            self.parse_expression(ExpressionPrecedence::LOWEST)?,
+        ));
+
+        while self.peek_token == Some(Token::Comma) {
+            self.next_token();
+            self.next_token();
+            arguments.push(Box::new(
+                self.parse_expression(ExpressionPrecedence::LOWEST)?,
+            ));
+        }
+
+        if self.peek_token != Some(Token::RightParen) {
+            self.errors.push(format!(
+                "expected next token to be RightParen, got {:?}",
+                self.peek_token
+            ));
+            return None;
+        };
+
+        self.next_token();
+
+        Some(arguments)
+    }
+
     fn parse_block_statement(&mut self) -> Option<BlockStatement> {
         let mut statements = Vec::new();
         self.next_token();
@@ -497,7 +543,7 @@ return 993322;"#;
                 },
                 Statement::Expression {
                     value: Expression::FunctionCall {
-                        name: "print".into(),
+                        name: Box::new(Expression::Identifier("print".into())),
                         arguments: vec![
                             Box::new(123.into()),
                             Box::new(true.into()),
@@ -516,7 +562,7 @@ return 993322;"#;
         };
 
         assert_eq!(
-            "let myVar = anotherVar;print(123,true,(false - (!null)))",
+            "let myVar = anotherVar;print(123, true, (false - (!null)))",
             program.to_string()
         );
     }
@@ -721,6 +767,15 @@ return 993322;"#;
             ("2 / (5 + 5)", "(2 / (5 + 5))"),
             ("-(5 + 5)", "(-(5 + 5))"),
             ("!(true == true)", "(!(true == true))"),
+            ("a + add(b * c) + d", "((a + add((b * c))) + d)"),
+            (
+                "add(a, b, 1, 2 * 3, 4 + 5, add(6, 7 * 8))",
+                "add(a, b, 1, (2 * 3), (4 + 5), add(6, (7 * 8)))",
+            ),
+            (
+                "add(a + b + c * d / f + g)",
+                "add((((a + b) + ((c * d) / f)) + g))",
+            ),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
@@ -851,5 +906,38 @@ return 993322;"#;
                 }
             )
         }
+    }
+
+    #[test]
+    fn test_call_expression_parsing() {
+        let input = "add(1, 2 * 3, 4 + 5)";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::FunctionCall {
+                    name: Box::new(Expression::Identifier("add".into())),
+                    arguments: vec![
+                        Box::new(Expression::Integer(1)),
+                        Box::new(Expression::InfixOperator {
+                            operator: Token::Asterisk,
+                            lh_expression: Box::new(Expression::Integer(2)),
+                            rh_expression: Box::new(Expression::Integer(3)),
+                        }),
+                        Box::new(Expression::InfixOperator {
+                            operator: Token::PlusSign,
+                            lh_expression: Box::new(Expression::Integer(4)),
+                            rh_expression: Box::new(Expression::Integer(5)),
+                        }),
+                    ]
+                }
+            }
+        )
     }
 }

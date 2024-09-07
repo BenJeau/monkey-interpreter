@@ -48,7 +48,7 @@ pub enum Expression {
         lh_expression: Box<Expression>,
     },
     FunctionCall {
-        name: String,
+        name: Box<Expression>,
         arguments: Vec<Box<Expression>>,
     },
     If {
@@ -91,12 +91,13 @@ impl ToString for Expression {
             ),
             Self::FunctionCall { name, arguments } => {
                 format!(
-                    "{name}({})",
+                    "{}({})",
+                    name.to_string(),
                     arguments
                         .iter()
                         .map(|argument| argument.to_string())
                         .collect::<Vec<_>>()
-                        .join(",")
+                        .join(", ")
                 )
             }
             Self::If {
