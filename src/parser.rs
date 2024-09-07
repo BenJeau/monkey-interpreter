@@ -245,7 +245,7 @@ impl ToString for Program {
             .iter()
             .map(ToString::to_string)
             .collect::<Vec<_>>()
-            .join(" ")
+            .join("")
     }
 }
 
@@ -340,7 +340,7 @@ return 993322;"#;
         };
 
         assert_eq!(
-            "let myVar = anotherVar; print(123,true,((!null)-false));",
+            "let myVar = anotherVar;print(123,true,(false - (!null)))",
             program.to_string()
         );
     }
@@ -461,6 +461,36 @@ return 993322;"#;
                     }
                 }
             )
+        }
+    }
+
+    #[test]
+    fn test_operator_precedence_parsing() {
+        let tests = &[
+            ("-a * b", "((-a) * b)"),
+            ("!-a", "(!(-a))"),
+            ("a + b + c", "((a + b) + c)"),
+            ("a + b - c", "((a + b) - c)"),
+            ("a * b * c", "((a * b) * c)"),
+            ("a * b / c", "((a * b) / c)"),
+            ("a + b / c", "(a + (b / c))"),
+            ("a + b * c + d / e - f", "(((a + (b * c)) + (d / e)) - f)"),
+            ("3 + 4; -5 * 5", "(3 + 4)((-5) * 5)"),
+            ("5 > 4 == 3 < 4", "((5 > 4) == (3 < 4))"),
+            ("5 < 4 != 3 > 4", "((5 < 4) != (3 > 4))"),
+            (
+                "3 + 4 * 5 == 3 * 1 + 4 * 5",
+                "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+            ),
+        ];
+
+        for (input, expected) in tests.into_iter().cloned() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+
+            assert_eq!(program.to_string(), expected.to_string(),);
         }
     }
 }

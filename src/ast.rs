@@ -12,7 +12,7 @@ impl ToString for Statement {
         match self {
             Self::Let { name, value } => format!("let {name} = {};", value.to_string()),
             Self::Return { value } => format!("return {};", value.to_string()),
-            Self::Expression { value } => format!("{};", value.to_string()),
+            Self::Expression { value } => value.to_string(),
         }
     }
 }
@@ -60,10 +60,10 @@ impl ToString for Expression {
                 rh_expression,
                 lh_expression,
             } => format!(
-                "({}{}{})",
-                rh_expression.to_string(),
+                "({} {} {})",
+                lh_expression.to_string(),
                 operator.to_string(),
-                lh_expression.to_string()
+                rh_expression.to_string(),
             ),
             Self::FunctionCall { name, arguments } => {
                 format!(
