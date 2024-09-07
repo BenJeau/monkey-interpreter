@@ -1,6 +1,13 @@
 [package]
+edition = "2021"
 name = "monkey_interpreter"
 version = "0.1.0"
-edition = "2021"
 
 [dependencies]
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+console_error_panic_hook = "0.1.7"
+wasm-bindgen = "0.2.93"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
