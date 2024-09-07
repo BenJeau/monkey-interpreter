@@ -432,16 +432,42 @@ return 993322;"#;
     }
 
     #[test]
+    fn test_boolean_prefix_expressions() {
+        let tests = &[
+            ("!true", true, Token::ExclamationMark),
+            ("!false", false, Token::ExclamationMark),
+        ];
+
+        for (input, value, operator) in tests.into_iter().cloned() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+            assert_eq!(program.statements.len(), 1);
+
+            assert_eq!(
+                program.statements[0],
+                Statement::Expression {
+                    value: Expression::PrefixOperator {
+                        operator,
+                        expression: Box::new(value.into())
+                    }
+                }
+            )
+        }
+    }
+
+    #[test]
     fn test_infix_expressions() {
         let tests = &[
-            ("5 + 5;", 5, Token::PlusSign, 5),
-            ("5 - 5;", 5, Token::MinusSign, 5),
-            ("5 * 5;", 5, Token::Asterisk, 5),
-            ("5 / 5;", 5, Token::Slash, 5),
-            ("5 > 5;", 5, Token::GreaterThan, 5),
-            ("5 < 5;", 5, Token::LessThan, 5),
-            ("5 == 5;", 5, Token::Equal, 5),
-            ("5 != 5;", 5, Token::NotEqual, 5),
+            ("5 + 5", 5, Token::PlusSign, 5),
+            ("5 - 5", 5, Token::MinusSign, 5),
+            ("5 * 5", 5, Token::Asterisk, 5),
+            ("5 / 5", 5, Token::Slash, 5),
+            ("5 > 5", 5, Token::GreaterThan, 5),
+            ("5 < 5", 5, Token::LessThan, 5),
+            ("5 == 5", 5, Token::Equal, 5),
+            ("5 != 5", 5, Token::NotEqual, 5),
         ];
 
         for (input, lh_integer, operator, rh_integer) in tests.into_iter().cloned() {
@@ -458,6 +484,34 @@ return 993322;"#;
                         operator,
                         lh_expression: Box::new(lh_integer.into()),
                         rh_expression: Box::new(rh_integer.into()),
+                    }
+                }
+            )
+        }
+    }
+
+    #[test]
+    fn test_boolean_infix_expressions() {
+        let tests = &[
+            ("true == true", true, Token::Equal, true),
+            ("true != false", true, Token::NotEqual, false),
+            ("false == false", false, Token::Equal, false),
+        ];
+
+        for (input, lh_boolean, operator, rh_boolean) in tests.into_iter().cloned() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+
+            assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+            assert_eq!(program.statements.len(), 1);
+
+            assert_eq!(
+                program.statements[0],
+                Statement::Expression {
+                    value: Expression::InfixOperator {
+                        operator,
+                        lh_expression: Box::new(lh_boolean.into()),
+                        rh_expression: Box::new(rh_boolean.into()),
                     }
                 }
             )
@@ -482,6 +536,10 @@ return 993322;"#;
                 "3 + 4 * 5 == 3 * 1 + 4 * 5",
                 "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
             ),
+            ("true", "true"),
+            ("false", "false"),
+            ("3 > 5 == false", "((3 > 5) == false)"),
+            ("3 < 5 == true", "((3 < 5) == true)"),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
