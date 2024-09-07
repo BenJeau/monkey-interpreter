@@ -44,6 +44,7 @@ fn eval_expression(expression: &Expression) -> Option<Object> {
 fn eval_prefix_expression(operator: &Token, value: Object) -> Object {
     match operator {
         Token::ExclamationMark => eval_bang_operator_expression(value),
+        Token::MinusSign => eval_minus_sign_expression(value),
         _ => value,
     }
 }
@@ -54,6 +55,13 @@ fn eval_bang_operator_expression(value: Object) -> Object {
         FALSE => TRUE,
         NULL => TRUE,
         _ => FALSE,
+    }
+}
+
+fn eval_minus_sign_expression(value: Object) -> Object {
+    match value {
+        Object::Integer(value) => Object::Integer(-value),
+        _ => NULL,
     }
 }
 
@@ -73,7 +81,7 @@ mod tests {
 
     #[test]
     fn test_eval_integer_expression() {
-        let tests = &[("5", 5), ("10", 10)];
+        let tests = &[("5", 5), ("10", 10), ("-5", -5), ("-10", -10)];
 
         for (input, expected) in tests.into_iter().cloned() {
             let mut parser = Parser::new(Lexer::new(input.into()));
@@ -88,16 +96,18 @@ mod tests {
 
     #[test]
     fn test_eval_boolean_expression() {
-        let tests = &[("true", true), ("false", false)];
+        let tests = &[
+            ("true", TRUE),
+            ("false", FALSE),
+            ("-true", NULL),
+            ("-false", NULL),
+        ];
 
         for (input, expected) in tests.into_iter().cloned() {
             let mut parser = Parser::new(Lexer::new(input.into()));
             let program = parser.parse_program().expect("Failed to parse program");
 
-            assert_eq!(
-                eval_statements(&program.statements),
-                Some(Object::Boolean(expected))
-            );
+            assert_eq!(eval_statements(&program.statements), Some(expected));
         }
     }
 
