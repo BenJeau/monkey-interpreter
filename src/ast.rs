@@ -1,6 +1,11 @@
 use crate::lexer::Token;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
+#[cfg_attr(
+    target_family = "wasm",
+    serde(tag = "kind", content = "value", rename_all = "snake_case")
+)]
 pub enum Statement {
     Let { name: String, value: Expression },
     Return { value: Expression },
@@ -18,6 +23,7 @@ impl ToString for Statement {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 pub struct BlockStatement {
     pub statements: Vec<Statement>,
 }
@@ -33,6 +39,11 @@ impl ToString for BlockStatement {
 }
 
 #[derive(PartialEq, Eq, Debug, Clone)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
+#[cfg_attr(
+    target_family = "wasm",
+    serde(tag = "kind", content = "value", rename_all = "snake_case")
+)]
 pub enum Expression {
     Integer(isize),
     Identifier(String),
@@ -103,16 +114,16 @@ impl ToString for Expression {
                 consequence,
                 alternative,
             } => format!(
-                "if{} {}{}",
+                "if ({}) {{{}}}{}",
                 condition.to_string(),
                 consequence.to_string(),
                 match alternative {
-                    Some(alternative) => format!("else {}", alternative.to_string()),
+                    Some(alternative) => format!("else {{{}}}", alternative.to_string()),
                     None => "".into(),
                 }
             ),
             Self::Function { arguments, body } => format!(
-                "fn({}) {}",
+                "fn({}) {{{}}}",
                 arguments
                     .iter()
                     .map(|argument| argument.to_string())

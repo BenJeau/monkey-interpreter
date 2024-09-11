@@ -1,6 +1,11 @@
 use crate::{ast::BlockStatement, environment::Environment};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
+#[cfg_attr(
+    target_family = "wasm",
+    serde(tag = "kind", content = "value", rename_all = "snake_case")
+)]
 pub enum Object {
     Integer(isize),
     Boolean(bool),

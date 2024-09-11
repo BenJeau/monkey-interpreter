@@ -3,6 +3,7 @@ use std::collections::BTreeMap;
 use crate::object::Object;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
+#[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 pub struct Environment {
     store: BTreeMap<String, Object>,
     parent: Option<Box<Environment>>,
