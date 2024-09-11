@@ -136,7 +136,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                         inner_env,
                         &mut environment.clone(),
                         Some(&name),
-                        &parameters,
+                        parameters,
                         arguments,
                         body,
                     )
@@ -158,7 +158,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 arguments: parameters,
                 body,
             } => eval_function(
-                &mut Environment::new(),
+                &Environment::new(),
                 environment,
                 None,
                 &parameters,
@@ -175,7 +175,7 @@ fn eval_function(
     outer_environment: &mut Environment,
     name: Option<&str>,
     parameters: &[String],
-    arguments: &[Box<Expression>],
+    arguments: &[Expression],
     body: &BlockStatement,
 ) -> Option<Object> {
     let mut environment = fn_environment.new_child();

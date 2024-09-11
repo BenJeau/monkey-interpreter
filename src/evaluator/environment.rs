@@ -34,9 +34,6 @@ impl Environment {
             return value;
         }
 
-        self.parent
-            .as_ref()
-            .map(|parent| parent.get(name))
-            .flatten()
+        self.parent.as_ref().and_then(|parent| parent.get(name))
     }
 }

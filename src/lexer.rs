@@ -53,16 +53,16 @@ pub enum Token {
 impl Token {
     pub fn precedence(&self) -> ExpressionPrecedence {
         match self {
-            Token::PlusSign => ExpressionPrecedence::SUM,
-            Token::MinusSign => ExpressionPrecedence::SUM,
-            Token::Asterisk => ExpressionPrecedence::PRODUCT,
-            Token::Slash => ExpressionPrecedence::PRODUCT,
-            Token::LessThan => ExpressionPrecedence::LESSGREATER,
-            Token::GreaterThan => ExpressionPrecedence::LESSGREATER,
-            Token::Equal => ExpressionPrecedence::EQUALS,
-            Token::NotEqual => ExpressionPrecedence::EQUALS,
-            Token::LeftParen => ExpressionPrecedence::CALL,
-            _ => ExpressionPrecedence::LOWEST,
+            Token::PlusSign => ExpressionPrecedence::Sum,
+            Token::MinusSign => ExpressionPrecedence::Sum,
+            Token::Asterisk => ExpressionPrecedence::Product,
+            Token::Slash => ExpressionPrecedence::Product,
+            Token::LessThan => ExpressionPrecedence::LessGreater,
+            Token::GreaterThan => ExpressionPrecedence::LessGreater,
+            Token::Equal => ExpressionPrecedence::Equals,
+            Token::NotEqual => ExpressionPrecedence::Equals,
+            Token::LeftParen => ExpressionPrecedence::Call,
+            _ => ExpressionPrecedence::Lowest,
         }
     }
 }
@@ -227,7 +227,7 @@ impl Lexer {
 
     fn read_integer(&mut self) -> isize {
         let position = self.position;
-        while self.ch.is_some() && matches!(self.ch.unwrap(), '0'..='9') {
+        while self.ch.is_some() && self.ch.unwrap().is_ascii_digit() {
             self.read_char();
         }
         self.input[position..self.position].parse().unwrap()

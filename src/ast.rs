@@ -59,7 +59,7 @@ pub enum Expression {
     },
     FunctionCall {
         name: Box<Expression>,
-        arguments: Vec<Box<Expression>>,
+        arguments: Vec<Expression>,
     },
     If {
         condition: Box<Expression>,

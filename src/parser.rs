@@ -14,13 +14,13 @@ pub struct Parser {
 #[derive(PartialEq, Eq, Default, PartialOrd, Ord, Debug)]
 pub enum ExpressionPrecedence {
     #[default]
-    LOWEST,
-    EQUALS,      // ==
-    LESSGREATER, // > or <
-    SUM,         //+
-    PRODUCT,     //*
-    PREFIX,      //-Xor!X
-    CALL,        // myFunction(X)
+    Lowest,
+    Equals,      // ==
+    LessGreater, // > or <
+    Sum,         //+
+    Product,     //*
+    Prefix,      //-Xor!X
+    Call,        // myFunction(X)
 }
 
 impl Parser {
@@ -91,23 +91,20 @@ impl Parser {
         self.next_token();
 
         // TODO: unsure if the correct precendence here
-        let value = self.parse_expression(ExpressionPrecedence::LOWEST)?;
+        let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token == Some(Token::Semicolon) {
             self.next_token();
         };
 
-        Some(Statement::Let {
-            name: name.into(),
-            value,
-        })
+        Some(Statement::Let { name, value })
     }
 
     fn parse_return_statement(&mut self) -> Option<Statement> {
         self.next_token();
 
         // TODO: unsure if the correct precendence here
-        let value = self.parse_expression(ExpressionPrecedence::LOWEST)?;
+        let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token == Some(Token::Semicolon) {
             self.next_token();
@@ -117,7 +114,7 @@ impl Parser {
     }
 
     fn parse_expression_statement(&mut self) -> Option<Statement> {
-        let value = self.parse_expression(ExpressionPrecedence::LOWEST)?;
+        let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token == Some(Token::Semicolon) {
             self.next_token();
@@ -195,7 +192,7 @@ impl Parser {
 
         Some(Expression::PrefixOperator {
             operator,
-            expression: Box::new(self.parse_expression(ExpressionPrecedence::PREFIX)?),
+            expression: Box::new(self.parse_expression(ExpressionPrecedence::Prefix)?),
         })
     }
 
@@ -215,7 +212,7 @@ impl Parser {
     fn parse_grouped_expression(&mut self) -> Option<Expression> {
         self.next_token();
 
-        let expression = self.parse_expression(ExpressionPrecedence::LOWEST)?;
+        let expression = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token != Some(Token::RightParen) {
             return None;
@@ -238,7 +235,7 @@ impl Parser {
         self.next_token();
         self.next_token(); // TODO: why two times??
 
-        let condition = self.parse_expression(ExpressionPrecedence::LOWEST)?;
+        let condition = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token != Some(Token::RightParen) {
             self.errors.push(format!(
@@ -280,11 +277,11 @@ impl Parser {
             None
         };
 
-        return Some(Expression::If {
+        Some(Expression::If {
             condition: Box::new(condition),
             consequence,
             alternative,
-        });
+        })
     }
 
     fn parse_function_literal(&mut self) -> Option<Expression> {
@@ -372,7 +369,7 @@ impl Parser {
         })
     }
 
-    fn parse_call_arguments(&mut self) -> Option<Vec<Box<Expression>>> {
+    fn parse_call_arguments(&mut self) -> Option<Vec<Expression>> {
         let mut arguments = Vec::new();
 
         if self.peek_token == Some(Token::RightParen) {
@@ -382,16 +379,12 @@ impl Parser {
 
         self.next_token();
 
-        arguments.push(Box::new(
-            self.parse_expression(ExpressionPrecedence::LOWEST)?,
-        ));
+        arguments.push(self.parse_expression(ExpressionPrecedence::Lowest)?);
 
         while self.peek_token == Some(Token::Comma) {
             self.next_token();
             self.next_token();
-            arguments.push(Box::new(
-                self.parse_expression(ExpressionPrecedence::LOWEST)?,
-            ));
+            arguments.push(self.parse_expression(ExpressionPrecedence::Lowest)?);
         }
 
         if self.peek_token != Some(Token::RightParen) {
@@ -531,16 +524,16 @@ return true;"#;
                     value: Expression::FunctionCall {
                         name: Box::new(Expression::Identifier("print".into())),
                         arguments: vec![
-                            Box::new(123.into()),
-                            Box::new(true.into()),
-                            Box::new(Expression::InfixOperator {
+                            123.into(),
+                            true.into(),
+                            Expression::InfixOperator {
                                 operator: Token::MinusSign,
                                 rh_expression: Box::new(Expression::PrefixOperator {
                                     operator: Token::ExclamationMark,
                                     expression: Box::new(Expression::Identifier("null".into())),
                                 }),
                                 lh_expression: Box::new(false.into()),
-                            }),
+                            },
                         ],
                     },
                 },
@@ -910,17 +903,17 @@ return true;"#;
                 value: Expression::FunctionCall {
                     name: Box::new(Expression::Identifier("add".into())),
                     arguments: vec![
-                        Box::new(Expression::Integer(1)),
-                        Box::new(Expression::InfixOperator {
+                        Expression::Integer(1),
+                        Expression::InfixOperator {
                             operator: Token::Asterisk,
                             lh_expression: Box::new(Expression::Integer(2)),
                             rh_expression: Box::new(Expression::Integer(3)),
-                        }),
-                        Box::new(Expression::InfixOperator {
+                        },
+                        Expression::InfixOperator {
                             operator: Token::PlusSign,
                             lh_expression: Box::new(Expression::Integer(4)),
                             rh_expression: Box::new(Expression::Integer(5)),
-                        }),
+                        },
                     ]
                 }
             }
