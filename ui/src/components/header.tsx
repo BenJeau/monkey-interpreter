@@ -32,7 +32,7 @@ const Header = () => (
     </div>
     <div className="flex flex-col items-end gap-1">
       <a
-        href="https://github.com/ben-rogerson/5.learning/tree/main/monkey_interpreter"
+        href="https://github.com/BenJeau/monkey-interpreter"
         target="_blank"
         rel="noreferrer noopener"
         className="flex cursor-pointer items-center gap-2 text-xs underline hover:decoration-dotted"
@@ -41,7 +41,7 @@ const Header = () => (
         <Github />
       </a>
       <a
-        href="https://www.npmjs.com/package/@benjeau/monkey_interpreter"
+        href="https://www.npmjs.com/package/@benjeau/monkey-interpreter"
         target="_blank"
         rel="noreferrer noopener"
         className="flex cursor-pointer items-center gap-2 text-xs underline hover:decoration-dotted"
