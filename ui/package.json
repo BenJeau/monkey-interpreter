@@ -21,7 +21,7 @@
     "framer-motion": "^11.5.4",
     "lucide-react": "^0.439.0",
     "monaco-editor": "^0.51.0",
-    "monkey-interpreter": "file:../pkg",
+    "@benjeau/monkey-interpreter": "0.1.0",
     "next-themes": "^0.3.0",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

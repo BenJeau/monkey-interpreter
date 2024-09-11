@@ -1,5 +1,10 @@
 import { useCallback, useEffect, useState } from "react";
-import { EvaluationResult, Token, execute, lexer } from "monkey-interpreter";
+import {
+  EvaluationResult,
+  Token,
+  execute,
+  lexer,
+} from "@benjeau/monkey-interpreter";
 
 import {
   ResizableHandle,

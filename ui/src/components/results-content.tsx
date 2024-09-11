@@ -1,4 +1,4 @@
-import { EvaluationResult, Token } from "monkey-interpreter";
+import { EvaluationResult, Token } from "@benjeau/monkey-interpreter";
 
 const ResultsContent = ({
   tab,
