@@ -46,7 +46,7 @@ const Header = () => (
         rel="noreferrer noopener"
         className="flex cursor-pointer items-center gap-2 text-xs underline hover:decoration-dotted"
       >
-        @benjeau/monkey_interpreter
+        @benjeau/monkey-interpreter
         <Npm />
       </a>
       <a
