@@ -1,13 +1,19 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" class="flex min-h-screen">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Vite + React + TS</title>
+    <title>Monkey Interpreter</title>
   </head>
-  <body>
-    <div id="root"></div>
+  <body
+    class="flex flex-1 bg-gradient-to-br from-teal-100 to-stone-50 dark:from-teal-950/50 dark:to-stone-950"
+  >
+    <div id="root" class="flex flex-1"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+        document.documentElement.classList.add("dark");
+      }
+    </script>
   </body>
 </html>
