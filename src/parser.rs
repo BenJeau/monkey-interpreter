@@ -136,10 +136,8 @@ impl Parser {
             Token::If => self.parse_if_expression(),
             Token::Function => self.parse_function_literal(),
             token => {
-                self.errors.push(format!(
-                    "no expression statement parser for {}",
-                    token.to_string()
-                ));
+                self.errors
+                    .push(format!("no expression statement parser for {token}"));
                 None
             }
         }?;
@@ -164,7 +162,7 @@ impl Parser {
                 _ => {
                     self.errors.push(format!(
                         "no infix statement parser for {}",
-                        self.peek_token.clone().unwrap().to_string()
+                        self.peek_token.clone().unwrap()
                     ));
                     return Some(left);
                 }
@@ -438,13 +436,12 @@ pub struct Program {
     pub statements: Vec<Statement>,
 }
 
-impl ToString for Program {
-    fn to_string(&self) -> String {
-        self.statements
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join("")
+impl std::fmt::Display for Program {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for statement in &self.statements {
+            writeln!(f, "{statement}")?;
+        }
+        Ok(())
     }
 }
 

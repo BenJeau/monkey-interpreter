@@ -12,12 +12,12 @@ pub enum Statement {
     Expression { value: Expression },
 }
 
-impl ToString for Statement {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Statement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Let { name, value } => format!("let {name} = {};", value.to_string()),
-            Self::Return { value } => format!("return {};", value.to_string()),
-            Self::Expression { value } => value.to_string(),
+            Self::Let { name, value } => write!(f, "let {name} = {value};"),
+            Self::Return { value } => write!(f, "return {value};"),
+            Self::Expression { value } => write!(f, "{value}"),
         }
     }
 }
@@ -28,13 +28,12 @@ pub struct BlockStatement {
     pub statements: Vec<Statement>,
 }
 
-impl ToString for BlockStatement {
-    fn to_string(&self) -> String {
-        self.statements
-            .iter()
-            .map(ToString::to_string)
-            .collect::<Vec<_>>()
-            .join("")
+impl std::fmt::Display for BlockStatement {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for statement in &self.statements {
+            writeln!(f, "{statement}")?;
+        }
+        Ok(())
     }
 }
 
@@ -72,65 +71,53 @@ pub enum Expression {
     },
 }
 
-impl ToString for Expression {
-    fn to_string(&self) -> String {
+impl std::fmt::Display for Expression {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Self::Integer(value) => format!("{value}"),
-            Self::Identifier(value) => value.into(),
+            Self::Integer(value) => write!(f, "{value}"),
+            Self::Identifier(value) => write!(f, "{value}"),
             Self::Boolean(value) => {
                 if *value {
-                    "true".into()
+                    write!(f, "true")
                 } else {
-                    "false".into()
+                    write!(f, "false")
                 }
             }
             Self::PrefixOperator {
                 operator,
                 expression,
-            } => format!("({}{})", operator.to_string(), expression.to_string()),
+            } => {
+                write!(f, "({operator}{expression})")
+            }
             Self::InfixOperator {
                 operator,
                 rh_expression,
                 lh_expression,
-            } => format!(
-                "({} {} {})",
-                lh_expression.to_string(),
-                operator.to_string(),
-                rh_expression.to_string(),
-            ),
+            } => write!(f, "({lh_expression} {operator} {rh_expression})"),
             Self::FunctionCall { name, arguments } => {
-                format!(
-                    "{}({})",
-                    name.to_string(),
-                    arguments
-                        .iter()
-                        .map(|argument| argument.to_string())
-                        .collect::<Vec<_>>()
-                        .join(", ")
-                )
+                write!(f, "{name}(")?;
+                for (index, argument) in arguments.iter().enumerate() {
+                    write!(f, "{argument}")?;
+                    if index != arguments.len() - 1 {
+                        write!(f, ", ")?;
+                    }
+                }
+                write!(f, ")")
             }
             Self::If {
                 condition,
                 consequence,
                 alternative,
-            } => format!(
-                "if ({}) {{{}}}{}",
-                condition.to_string(),
-                consequence.to_string(),
-                match alternative {
-                    Some(alternative) => format!("else {{{}}}", alternative.to_string()),
-                    None => "".into(),
+            } => {
+                write!(f, "if ({condition}) {{{consequence}}}")?;
+                if let Some(alternative) = alternative {
+                    write!(f, "else {{{alternative}}}")?;
                 }
-            ),
-            Self::Function { arguments, body } => format!(
-                "fn({}) {{{}}}",
-                arguments
-                    .iter()
-                    .map(|argument| argument.to_string())
-                    .collect::<Vec<_>>()
-                    .join(", "),
-                body.to_string()
-            ),
+                Ok(())
+            }
+            Self::Function { arguments, body } => {
+                write!(f, "fn({}) {{{body}}}", arguments.join(", "))
+            }
         }
     }
 }

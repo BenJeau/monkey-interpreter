@@ -40,7 +40,7 @@ impl Object {
             Object::Function {
                 parameters, body, ..
             } => {
-                format!("fn({}) {{ {} }}", parameters.join(", "), body.to_string())
+                format!("fn({}) {{ {body} }}", parameters.join(", "))
             }
             Object::Null => "null".into(),
         }

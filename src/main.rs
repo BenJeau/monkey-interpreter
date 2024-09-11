@@ -26,7 +26,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         };
 
-        if parser.errors.len() > 0 {
+        if !parser.errors.is_empty() {
             println!("Woops! We ran into some monkey business here!\n");
             println!("Parser errors:");
             for error in parser.errors.iter() {

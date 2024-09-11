@@ -216,15 +216,11 @@ fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -
         (Object::Boolean(lh_boolean), Object::Boolean(rh_boolean)) => match operator {
             Token::Equal => native_boolean_to_boolean_object(lh_boolean == rh_boolean),
             Token::NotEqual => native_boolean_to_boolean_object(lh_boolean != rh_boolean),
-            _ => Object::Error(format!(
-                "Unknown operator: BOOLEAN {} BOOLEAN",
-                operator.to_string(),
-            )),
+            _ => Object::Error(format!("Unknown operator: BOOLEAN {operator} BOOLEAN")),
         },
         (lh_value, rh_value) => Object::Error(format!(
-            "Type mismatch: {} {} {}",
+            "Type mismatch: {} {operator} {}",
             lh_value.kind(),
-            operator.to_string(),
             rh_value.kind()
         )),
     }
@@ -240,10 +236,7 @@ fn eval_integer_infix_expression(operator: &Token, lh_integer: isize, rh_integer
         Token::GreaterThan => Object::Boolean(lh_integer > rh_integer),
         Token::Equal => Object::Boolean(lh_integer == rh_integer),
         Token::NotEqual => Object::Boolean(lh_integer != rh_integer),
-        _ => Object::Error(format!(
-            "Unknown operator: INTEGER {} INTEGER",
-            operator.to_string()
-        )),
+        _ => Object::Error(format!("Unknown operator: INTEGER {operator} INTEGER")),
     }
 }
 
@@ -251,11 +244,7 @@ fn eval_prefix_expression(operator: &Token, value: Object) -> Object {
     match operator {
         Token::ExclamationMark => eval_bang_operator_expression(value),
         Token::MinusSign => eval_minus_sign_expression(value),
-        _ => Object::Error(format!(
-            "Unknown operator: {}{}",
-            operator.to_string(),
-            value.kind()
-        )),
+        _ => Object::Error(format!("Unknown operator: {operator}{}", value.kind())),
     }
 }
 
