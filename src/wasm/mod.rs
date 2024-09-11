@@ -1,4 +1,4 @@
-use crate::{ast, environment, evaluator, lexer, parser};
+use crate::{ast, evaluator, lexer, parser};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -7,7 +7,7 @@ struct EvaluationResult {
     statements: Vec<ast::Statement>,
     program: String,
     errors: Vec<String>,
-    environment: Option<environment::Environment>,
+    environment: Option<evaluator::environment::Environment>,
     output: Option<String>,
 }
 
@@ -32,7 +32,7 @@ pub fn execute(input: &str) -> JsValue {
         return serde_wasm_bindgen::to_value(&result).unwrap();
     }
 
-    let mut environment = environment::Environment::new();
+    let mut environment = evaluator::environment::Environment::new();
     let output = evaluator::eval_program(&program, &mut environment);
 
     result.statements = program.statements;

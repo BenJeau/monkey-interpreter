@@ -1,8 +1,6 @@
 mod ast;
-mod environment;
 mod evaluator;
 mod lexer;
-mod object;
 mod parser;
 
 #[cfg(target_family = "wasm")]

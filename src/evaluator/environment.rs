@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use crate::object::Object;
+use crate::evaluator::object::Object;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]

@@ -1,10 +1,12 @@
 use crate::{
     ast::{BlockStatement, Expression, Statement},
-    environment::Environment,
+    evaluator::{environment::Environment, object::Object},
     lexer::Token,
-    object::Object,
     parser::Program,
 };
+
+pub mod environment;
+pub mod object;
 
 const NULL: Object = Object::Null;
 const TRUE: Object = Object::Boolean(true);

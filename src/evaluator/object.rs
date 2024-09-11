@@ -1,4 +1,4 @@
-use crate::{ast::BlockStatement, environment::Environment};
+use crate::{ast::BlockStatement, evaluator::environment::Environment};
 
 #[derive(PartialEq, Eq, Debug, Clone)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
