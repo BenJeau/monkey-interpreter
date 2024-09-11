@@ -213,7 +213,7 @@ jobs:
           if [ "${{ inputs.dry-run }}" = "true" ]; then
             echo "dry-run"
           else
-            wasm-pack publish
+            wasm-pack publish --access public
           fi
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
