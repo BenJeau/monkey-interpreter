@@ -33,7 +33,7 @@ impl Builtin {
 fn builtin_len(arguments: &[Object]) -> Option<Object> {
     if arguments.len() != 1 {
         return Some(Object::Error(format!(
-            "Wrong number of arguments. Got {}, expected 1",
+            "wrong number of arguments. Got {}, expected 1",
             arguments.len()
         )));
     }
@@ -42,7 +42,7 @@ fn builtin_len(arguments: &[Object]) -> Option<Object> {
         Object::String(value) => Some(Object::Integer(value.len() as isize)),
         Object::Error(value) => Some(Object::Error(value.clone())),
         _ => Some(Object::Error(format!(
-            "Argument to \"len\" not supported, got {}",
+            "argument to \"len\" not supported, got {}",
             arguments[0].kind()
         ))),
     }
@@ -66,7 +66,7 @@ fn builtin_println(arguments: &[Object]) -> Option<Object> {
 fn builtin_exit(arguments: &[Object]) -> Option<Object> {
     if arguments.len() > 1 {
         return Some(Object::Error(format!(
-            "Wrong number of arguments. Got {}, expected 0 or 1",
+            "wrong number of arguments. Got {}, expected 0 or 1",
             arguments.len()
         )));
     }
@@ -75,7 +75,7 @@ fn builtin_exit(arguments: &[Object]) -> Option<Object> {
         Object::Integer(value) => std::process::exit(*value as i32),
         Object::Error(value) => Some(Object::Error(value.clone())),
         _ => Some(Object::Error(format!(
-            "Argument to \"exit\" not supported, got {}",
+            "argument to \"exit\" not supported, got {}",
             arguments[0].kind()
         ))),
     }

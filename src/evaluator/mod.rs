@@ -75,7 +75,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
             if let Some(value) = environment.get(name) {
                 Some(value.clone())
             } else {
-                Some(Object::Error(format!("Identifier not found: {}", name)))
+                Some(Object::Error(format!("identifier not found: {}", name)))
             }
         }
         Expression::String(value) => Some(Object::String(value.to_string())),
@@ -154,7 +154,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                     }
                 }
 
-                Some(Object::Error(format!("Function not found: {}", name)))
+                Some(Object::Error(format!("function not found: {}", name)))
             }
             Expression::Function {
                 arguments: parameters,
@@ -192,7 +192,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 Some(array.get(*index as usize).cloned().unwrap_or_default())
             } else {
                 Some(Object::Error(format!(
-                    "Index operator not supported: {} With index of: {}",
+                    "index operator not supported: {} With index of: {}",
                     array.kind(),
                     index.kind(),
                 )))
@@ -247,14 +247,14 @@ fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -
         (Object::Boolean(lh_boolean), Object::Boolean(rh_boolean)) => match operator {
             Token::Equal => native_boolean_to_boolean_object(lh_boolean == rh_boolean),
             Token::NotEqual => native_boolean_to_boolean_object(lh_boolean != rh_boolean),
-            _ => Object::Error(format!("Unknown operator: BOOLEAN {operator} BOOLEAN")),
+            _ => Object::Error(format!("unknown operator: BOOLEAN {operator} BOOLEAN")),
         },
         (Object::String(lh_string), Object::String(rh_string)) => match operator {
             Token::PlusSign => Object::String(format!("{lh_string}{rh_string}")),
-            _ => Object::Error(format!("Unknown operator: STRING {operator} STRING")),
+            _ => Object::Error(format!("unknown operator: STRING {operator} STRING")),
         },
         (lh_value, rh_value) => Object::Error(format!(
-            "Type mismatch: {} {operator} {}",
+            "type mismatch: {} {operator} {}",
             lh_value.kind(),
             rh_value.kind()
         )),
@@ -271,7 +271,7 @@ fn eval_integer_infix_expression(operator: &Token, lh_integer: isize, rh_integer
         Token::GreaterThan => Object::Boolean(lh_integer > rh_integer),
         Token::Equal => Object::Boolean(lh_integer == rh_integer),
         Token::NotEqual => Object::Boolean(lh_integer != rh_integer),
-        _ => Object::Error(format!("Unknown operator: INTEGER {operator} INTEGER")),
+        _ => Object::Error(format!("unknown operator: INTEGER {operator} INTEGER")),
     }
 }
 
@@ -279,7 +279,7 @@ fn eval_prefix_expression(operator: &Token, value: Object) -> Object {
     match operator {
         Token::ExclamationMark => eval_bang_operator_expression(value),
         Token::MinusSign => eval_minus_sign_expression(value),
-        _ => Object::Error(format!("Unknown operator: {operator}{}", value.kind())),
+        _ => Object::Error(format!("unknown operator: {operator}{}", value.kind())),
     }
 }
 
@@ -295,7 +295,7 @@ fn eval_bang_operator_expression(value: Object) -> Object {
 fn eval_minus_sign_expression(value: Object) -> Object {
     match value {
         Object::Integer(value) => Object::Integer(-value),
-        _ => Object::Error(format!("Unknown operator: -{}", value.kind())),
+        _ => Object::Error(format!("unknown operator: -{}", value.kind())),
     }
 }
 
@@ -460,17 +460,17 @@ mod tests {
     #[test]
     fn test_error_handling() {
         let tests = &[
-            ("5 + true;", "Type mismatch: INTEGER + BOOLEAN"),
-            ("5 + true; 5;", "Type mismatch: INTEGER + BOOLEAN"),
-            ("-true", "Unknown operator: -BOOLEAN"),
-            ("true + false", "Unknown operator: BOOLEAN + BOOLEAN"),
+            ("5 + true;", "type mismatch: INTEGER + BOOLEAN"),
+            ("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
+            ("-true", "unknown operator: -BOOLEAN"),
+            ("true + false", "unknown operator: BOOLEAN + BOOLEAN"),
             (
                 "let a = 234; true + false; 5",
-                "Unknown operator: BOOLEAN + BOOLEAN",
+                "unknown operator: BOOLEAN + BOOLEAN",
             ),
             (
                 "if (10 > 1) { return true + false; }",
-                "Unknown operator: BOOLEAN + BOOLEAN",
+                "unknown operator: BOOLEAN + BOOLEAN",
             ),
             (
                 r#"if (10 > 1) {
@@ -479,13 +479,13 @@ mod tests {
                 }
                 return 1;
             }"#,
-                "Unknown operator: BOOLEAN + BOOLEAN",
+                "unknown operator: BOOLEAN + BOOLEAN",
             ),
-            ("foobar", "Identifier not found: foobar"),
-            ("\"Hello\" - \"World\"", "Unknown operator: STRING - STRING"),
+            ("foobar", "identifier not found: foobar"),
+            ("\"Hello\" - \"World\"", "unknown operator: STRING - STRING"),
             (
                 "[1,2,3][true]",
-                "Index operator not supported: ARRAY With index of: BOOLEAN",
+                "index operator not supported: ARRAY With index of: BOOLEAN",
             ),
         ];
 
@@ -635,7 +635,7 @@ test(5);
 
         assert_eq!(
             eval_program(&program, &mut environment),
-            Some(Object::Error("Identifier not found: data".into())),
+            Some(Object::Error("identifier not found: data".into())),
         );
     }
 
@@ -661,11 +661,11 @@ test(5);
             (r#"len("hello world")"#, Object::Integer(11)),
             (
                 "len(1)",
-                Object::Error(r#"Argument to "len" not supported, got INTEGER"#.into()),
+                Object::Error(r#"argument to "len" not supported, got INTEGER"#.into()),
             ),
             (
                 r#"len("one", "two")"#,
-                Object::Error(r#"Wrong number of arguments. Got 2, expected 1"#.into()),
+                Object::Error(r#"wrong number of arguments. Got 2, expected 1"#.into()),
             ),
         ];
 
