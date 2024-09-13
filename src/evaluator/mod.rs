@@ -219,6 +219,10 @@ fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -
             Token::NotEqual => native_boolean_to_boolean_object(lh_boolean != rh_boolean),
             _ => Object::Error(format!("Unknown operator: BOOLEAN {operator} BOOLEAN")),
         },
+        (Object::String(lh_string), Object::String(rh_string)) => match operator {
+            Token::PlusSign => Object::String(format!("{lh_string}{rh_string}")),
+            _ => Object::Error(format!("Unknown operator: STRING {operator} STRING")),
+        },
         (lh_value, rh_value) => Object::Error(format!(
             "Type mismatch: {} {operator} {}",
             lh_value.kind(),
@@ -448,6 +452,7 @@ mod tests {
                 "Unknown operator: BOOLEAN + BOOLEAN",
             ),
             ("foobar", "Identifier not found: foobar"),
+            ("\"Hello\" - \"World\"", "Unknown operator: STRING - STRING"),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
@@ -597,6 +602,20 @@ test(5);
         assert_eq!(
             eval_program(&program, &mut environment),
             Some(Object::Error("Identifier not found: data".into())),
+        );
+    }
+
+    #[test]
+    fn test_string_concatenation() {
+        let input = "\"Hello\" + \" \" + \"World!\"";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::String("Hello World!".into())),
         );
     }
 }
