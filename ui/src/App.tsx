@@ -18,6 +18,7 @@ import CodeInputContent from "@/components/code-input-content";
 import ResultsHeader from "@/components/results-header";
 import ResultsContent from "@/components/results-content";
 import { useKeyListener } from "@/hooks/use-key-listener";
+import { useWindowWidth } from "@/hooks/use-window-width";
 import { useTheme } from "@/lib/utils";
 
 function App() {
@@ -73,15 +74,19 @@ function App() {
   }, [input, executeCode, autoRun]);
 
   useKeyListener("Enter", executeCode);
+  const windowWidth = useWindowWidth();
 
   return (
-    <div className="m-4 flex flex-1 flex-col rounded-3xl border border-border bg-background/50 shadow-md">
+    <div className="m-2 flex flex-1 flex-col rounded-3xl border border-border bg-background/50 shadow-md md:m-4">
       <Header />
       <ExamplesSubHeader setInput={setInput} />
-      <ResizablePanelGroup direction="horizontal" className="p-2 pt-0">
+      <ResizablePanelGroup
+        direction={windowWidth > 768 ? "horizontal" : "vertical"}
+        className="p-2 pt-0"
+      >
         <ResizablePanel
           minSize={30}
-          className="flex flex-col rounded-s-2xl border border-e-0 border-border bg-transparent shadow-inner"
+          className="flex flex-col rounded-t-2xl border border-b-0 border-border bg-transparent shadow-inner md:rounded-s-2xl md:rounded-t-none md:border-b md:border-e-0"
         >
           <CodeInputHeader
             hasInput={input !== undefined}
@@ -96,7 +101,7 @@ function App() {
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel
-          className="flex-1 overflow-hidden rounded-e-2xl border border-s-0 border-border bg-background/50 text-sm shadow-inner"
+          className="flex-1 overflow-hidden rounded-b-2xl border border-t-0 border-border bg-background/50 text-sm shadow-inner md:rounded-b-none md:rounded-e-2xl md:border-s-0 md:border-t"
           minSize={30}
         >
           <ResultsHeader tab={tab} setTab={setTab} time={time} />

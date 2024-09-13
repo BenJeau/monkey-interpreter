@@ -46,7 +46,7 @@ const ResultsHeader = ({
         Parser
       </Badge>
     </div>
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
       <p className="whitespace-nowrap">No errors</p>
       <Badge variant="secondary">{time} ms</Badge>
     </div>

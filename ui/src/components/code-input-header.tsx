@@ -23,7 +23,7 @@ const CodeInputHeader = ({
 
   return (
     <div className="flex justify-between gap-2 border-b border-border bg-background p-2">
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center gap-2">
         <Badge
           className={cn(hasInput ? "cursor-pointer" : "opacity-20")}
           variant="destructive"
@@ -57,7 +57,7 @@ const CodeInputHeader = ({
           Share
         </Badge>
       </div>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-wrap items-center justify-end gap-2">
         <Badge
           variant="outline"
           className={cn(autoRun ? "opacity-20" : "cursor-pointer")}

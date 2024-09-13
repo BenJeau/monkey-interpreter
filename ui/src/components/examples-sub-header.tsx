@@ -5,7 +5,7 @@ const ExamplesSubHeader = ({
 }: {
   setInput: (code: string) => void;
 }) => (
-  <div className="m-2 mt-0 flex gap-2 rounded-2xl border border-border bg-background/50 px-3 py-2 text-xs shadow-inner">
+  <div className="m-2 mt-0 flex flex-wrap gap-x-2 gap-y-1 rounded-2xl border border-border bg-background/50 px-3 py-2 text-xs shadow-inner">
     Load code examples:
     {Object.entries(codeExamples).map(([name, code]) => (
       <a
