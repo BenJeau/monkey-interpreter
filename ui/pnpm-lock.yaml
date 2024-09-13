@@ -9,8 +9,8 @@ importers:
   .:
     dependencies:
       '@benjeau/monkey-interpreter':
-        specifier: 0.2.1
-        version: 0.2.1
+        specifier: 0.2.2
+        version: 0.2.2
       '@monaco-editor/react':
         specifier: ^4.6.0
         version: 4.6.0(monaco-editor@0.51.0)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -118,8 +118,8 @@ packages:
     resolution: {integrity: sha512-UrcABB+4bUrFABwbluTIBErXwvbsU/V7TZWfmbgJfbkwiBuziS9gxdODUyuiecfdGQ85jglMW6juS3+z5TsKLw==}
     engines: {node: '>=10'}
 
-  '@benjeau/monkey-interpreter@0.2.1':
-    resolution: {integrity: sha512-IWDyJH9FL0ZSdVuUV+X+PxQpJL23PDSkTLf02nRHr7CLE4RX8JPbtLUV1PFdEDWvXL2O20pWx5mXKwUL/IoniA==}
+  '@benjeau/monkey-interpreter@0.2.2':
+    resolution: {integrity: sha512-9X5SOvfziPexLfWZoCNtRAbd0vpB+jrh0wpJ1AVMobERKhiD+G4RItem+BJpvoJSV6flwJOb6TYDpi3KHePlaA==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -1509,7 +1509,7 @@ snapshots:
 
   '@alloc/quick-lru@5.2.0': {}
 
-  '@benjeau/monkey-interpreter@0.2.1': {}
+  '@benjeau/monkey-interpreter@0.2.2': {}
 
   '@esbuild/aix-ppc64@0.21.5':
     optional: true
