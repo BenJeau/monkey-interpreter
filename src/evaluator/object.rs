@@ -17,6 +17,7 @@ pub enum Object {
         environment: Environment,
         body: BlockStatement,
     },
+    #[cfg_attr(target_family = "wasm", serde(skip))]
     Builtin(fn(&[Self]) -> Option<Self>),
     Array(Vec<Object>),
     #[default]
