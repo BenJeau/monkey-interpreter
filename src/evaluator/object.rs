@@ -10,13 +10,14 @@ pub enum Object {
     Integer(isize),
     Boolean(bool),
     String(String),
-    Return(Box<Object>),
+    Return(Box<Self>),
     Error(String),
     Function {
         parameters: Vec<String>,
         environment: Environment,
         body: BlockStatement,
     },
+    Builtin(fn(&[Self]) -> Option<Self>),
     Null,
 }
 
@@ -29,6 +30,7 @@ impl Object {
             Object::Return(_) => "RETURN",
             Object::Error(_) => "ERROR",
             Object::Function { .. } => "FUNCTION",
+            Object::Builtin(_) => "BUILTIN",
             Object::Null => "NULL",
         }
     }
@@ -45,6 +47,7 @@ impl Object {
             } => {
                 format!("fn({}) {{ {body} }}", parameters.join(", "))
             }
+            Object::Builtin(_) => "builtin function".into(),
             Object::Null => "null".into(),
         }
     }

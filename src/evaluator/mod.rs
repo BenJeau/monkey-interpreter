@@ -5,6 +5,7 @@ use crate::{
     token::Token,
 };
 
+mod builtins;
 pub mod environment;
 pub mod object;
 
@@ -133,27 +134,27 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                     body,
                 }) = environment.get(&name)
                 {
-                    eval_function(
+                    return eval_function(
                         inner_env,
                         &mut environment.clone(),
                         Some(&name),
                         parameters,
                         arguments,
                         body,
-                    )
-                } else if name == "print" {
-                    arguments.iter().enumerate().for_each(|(index, argument)| {
-                        let value = eval_expression(argument, environment).unwrap_or(NULL);
-                        print!("{}", value.inspect());
-                        if index != arguments.len() - 1 {
-                            print!(" ");
-                        }
-                    });
-                    println!();
-                    None
-                } else {
-                    Some(Object::Error(format!("Function not found: {}", name)))
+                    );
                 }
+
+                if let Some(builtin) = builtins::Builtin::from_str(&name) {
+                    if let Object::Builtin(function) = builtin.get() {
+                        let evaluated_arguments = arguments
+                            .iter()
+                            .map(|argument| eval_expression(argument, environment))
+                            .collect::<Option<Vec<Object>>>()?;
+                        return function(&evaluated_arguments);
+                    }
+                }
+
+                Some(Object::Error(format!("Function not found: {}", name)))
             }
             Expression::Function {
                 arguments: parameters,
@@ -607,7 +608,7 @@ test(5);
 
     #[test]
     fn test_string_concatenation() {
-        let input = "\"Hello\" + \" \" + \"World!\"";
+        let input = r#""Hello" + " " + "World!""#;
 
         let mut parser = Parser::new(Lexer::new(input.into()));
         let program = parser.parse_program().expect("Failed to parse program");
@@ -617,5 +618,35 @@ test(5);
             eval_program(&program, &mut environment),
             Some(Object::String("Hello World!".into())),
         );
+    }
+
+    #[test]
+    fn test_builtin_functions() {
+        let tests = &[
+            (r#"len("")"#, Object::Integer(0)),
+            (r#"len("four")"#, Object::Integer(4)),
+            (r#"len("hello world")"#, Object::Integer(11)),
+            (
+                "len(1)",
+                Object::Error(r#"Argument to "len" not supported, got INTEGER"#.into()),
+            ),
+            (
+                r#"len("one", "two")"#,
+                Object::Error(r#"Wrong number of arguments. Got 2, expected 1"#.into()),
+            ),
+        ];
+
+        for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
+
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(expected.clone()),
+                "test {}",
+                index
+            );
+        }
     }
 }
