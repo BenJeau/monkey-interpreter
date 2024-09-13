@@ -9,7 +9,7 @@ const ResultsContent = ({
   results?: EvaluationResult;
   tokens: Token[];
 }) => (
-  <pre className="overflow-auto p-2 shadow-inner">
+  <pre className="overflow-auto whitespace-break-spaces p-2 shadow-inner">
     {tab === 0 && (
       <div>
         {(results?.errors.length ?? 0) > 0 && (
