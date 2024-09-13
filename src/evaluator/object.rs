@@ -18,6 +18,7 @@ pub enum Object {
         body: BlockStatement,
     },
     Builtin(fn(&[Self]) -> Option<Self>),
+    Array(Vec<Object>),
     Null,
 }
 
@@ -31,6 +32,7 @@ impl Object {
             Object::Error(_) => "ERROR",
             Object::Function { .. } => "FUNCTION",
             Object::Builtin(_) => "BUILTIN",
+            Object::Array(_) => "ARRAY",
             Object::Null => "NULL",
         }
     }
@@ -48,6 +50,16 @@ impl Object {
                 format!("fn({}) {{ {body} }}", parameters.join(", "))
             }
             Object::Builtin(_) => "builtin function".into(),
+            Object::Array(elements) => {
+                format!(
+                    "[{}]",
+                    elements
+                        .iter()
+                        .map(|element| element.inspect())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
             Object::Null => "null".into(),
         }
     }

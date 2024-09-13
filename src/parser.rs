@@ -129,6 +129,7 @@ impl Parser {
             Token::Integer(integer) => Some(integer.into()),
             Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
             Token::String(string) => Some(Expression::String(string)),
+            Token::LeftBracket => self.parse_array_literal(),
             Token::True => Some(true.into()),
             Token::False => Some(false.into()),
             Token::PlusSign => self.parse_prefix_expression(),
@@ -178,6 +179,37 @@ impl Parser {
         }
 
         Some(left)
+    }
+
+    fn parse_array_literal(&mut self) -> Option<Expression> {
+        Some(Expression::Array(
+            self.parse_expression_list(Token::RightBracket),
+        ))
+    }
+
+    fn parse_expression_list(&mut self, end_token: Token) -> Vec<Option<Expression>> {
+        if self.peek_token.as_ref() == Some(&end_token) {
+            self.next_token();
+            return vec![];
+        }
+
+        self.next_token();
+        let mut list = vec![self.parse_expression(ExpressionPrecedence::Lowest)];
+
+        while self.peek_token == Some(Token::Comma) {
+            self.next_token();
+            self.next_token();
+            list.push(self.parse_expression(ExpressionPrecedence::Lowest));
+        }
+
+        if self.peek_token != Some(end_token) {
+            // TODO: double check this logic, unsure if this is correct
+            return vec![];
+        }
+
+        self.next_token();
+
+        return list;
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
@@ -933,6 +965,36 @@ return true;"#;
             program.statements[0],
             Statement::Expression {
                 value: Expression::String("hello world".to_string())
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_array_literals() {
+        let input = "[1, 2 * 2, 3 + 3]";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::Array(vec![
+                    Some(Expression::Integer(1)),
+                    Some(Expression::InfixOperator {
+                        operator: Token::Asterisk,
+                        lh_expression: Box::new(Expression::Integer(2)),
+                        rh_expression: Box::new(Expression::Integer(2)),
+                    }),
+                    Some(Expression::InfixOperator {
+                        operator: Token::PlusSign,
+                        lh_expression: Box::new(Expression::Integer(3)),
+                        rh_expression: Box::new(Expression::Integer(3)),
+                    }),
+                ])
             }
         )
     }

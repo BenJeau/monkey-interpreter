@@ -169,6 +169,17 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
             ),
             _ => None,
         },
+        Expression::Array(elements) => Some(Object::Array(
+            elements
+                .iter()
+                .map(|element| {
+                    element
+                        .as_ref()
+                        .map(|element| eval_expression(element, environment))
+                        .unwrap_or(Some(Object::Null))
+                })
+                .collect::<Option<Vec<Object>>>()?,
+        )),
     }
 }
 
