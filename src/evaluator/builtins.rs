@@ -71,7 +71,7 @@ fn builtin_exit(arguments: &[Object]) -> Option<Object> {
         )));
     }
 
-    match &arguments.get(0).unwrap_or(&Object::Integer(0)) {
+    match arguments.first().unwrap_or(&Object::Integer(0)) {
         Object::Integer(value) => std::process::exit(*value as i32),
         Object::Error(value) => Some(Object::Error(value.clone())),
         _ => Some(Object::Error(format!(

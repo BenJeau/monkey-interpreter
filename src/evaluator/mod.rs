@@ -176,13 +176,13 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 .collect::<Option<Vec<Object>>>()?,
         )),
         Expression::Index { left, index } => {
-            let array = eval_expression(&left, environment)?;
+            let array = eval_expression(left, environment)?;
 
             if matches!(array, Object::Error(_)) {
                 return Some(array);
             }
 
-            let index = eval_expression(&index, environment)?;
+            let index = eval_expression(index, environment)?;
 
             if matches!(index, Object::Error(_)) {
                 return Some(index);

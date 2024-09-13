@@ -195,10 +195,10 @@ impl Parser {
         }
         self.next_token();
 
-        return Some(Expression::Index {
+        Some(Expression::Index {
             left: Box::new(left),
             index: Box::new(index),
-        });
+        })
     }
 
     fn parse_array_literal(&mut self) -> Option<Expression> {
