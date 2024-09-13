@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::token::Token;
 
 #[derive(PartialEq, Eq, Debug, Clone)]
@@ -75,6 +77,7 @@ pub enum Expression {
         left: Box<Expression>,
         index: Box<Expression>,
     },
+    HashLiteral(BTreeMap<Expression, Expression>),
 }
 
 impl std::fmt::Display for Expression {
@@ -137,6 +140,16 @@ impl std::fmt::Display for Expression {
             }
             Self::Index { left, index } => {
                 write!(f, "({left}[{index}])")
+            }
+            Self::HashLiteral(elements) => {
+                write!(f, "{{")?;
+                for (index, (key, value)) in elements.iter().enumerate() {
+                    write!(f, "{key}: {value}")?;
+                    if index != elements.len() - 1 {
+                        write!(f, ", ")?;
+                    }
+                }
+                write!(f, "}}")
             }
         }
     }

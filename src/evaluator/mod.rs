@@ -198,6 +198,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 )))
             }
         }
+        Expression::HashLiteral(_) => todo!(),
     }
 }
 
