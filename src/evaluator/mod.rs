@@ -658,4 +658,22 @@ test(5);
             );
         }
     }
+
+    #[test]
+    fn test_array_literals() {
+        let input = "[1, 2 * 2, 3 + 3]";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Array(vec![
+                Object::Integer(1),
+                Object::Integer(4),
+                Object::Integer(6)
+            ])),
+        );
+    }
 }
