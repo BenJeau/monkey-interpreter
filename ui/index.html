@@ -70,12 +70,27 @@
     <script>
       if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         document.documentElement.classList.add("dark");
-        let element = document.querySelector("#loading-container");
+        const element = document.querySelector("#loading-container");
         if (element) {
           element.style.background = "#000";
           element.style.color = "#fff";
         }
       }
+      setTimeout(() => {
+        const root = document.querySelector("#root");
+        if (root.innerHTML === "") {
+          const element = document.querySelector("#loading-container");
+          if (element) {
+            const reloadHelp = document.createElement("p");
+            reloadHelp.innerHTML =
+              "There seems to be an issue with the WASM module.<br/>Please reload the page to try again.";
+            reloadHelp.style.fontSize = "16px";
+            reloadHelp.style.color = "#f00";
+            reloadHelp.style.textAlign = "center";
+            element.appendChild(reloadHelp);
+          }
+        }
+      }, 6000);
     </script>
   </body>
 </html>
