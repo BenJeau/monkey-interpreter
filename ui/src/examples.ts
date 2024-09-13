@@ -34,4 +34,37 @@ add(2, 3);
 let myArray = [1, 2, 3];
 myArray[1 * 3 - 2];
   `,
+  Map: `
+let map = fn(arr, f) {
+  let iter = fn(arr, accumulated) {
+    if (len(arr) == 0) {
+      accumulated
+    } else {
+      iter(rest(arr), push(accumulated, f(first(arr))));
+    }
+  };
+  iter(arr, []);
+};
+
+let data = [1, 2, 3];
+let squared = fn(x) { x * x };
+
+map(data, squared);`,
+  Fold: `
+let fold = fn(arr, initial, f) {
+  let iter = fn(arr, accumulated) {
+    if (len(arr) == 0) {
+      accumulated
+    } else {
+      iter(rest(arr), f(accumulated, first(arr)));
+    }
+  };
+  iter(arr, initial);
+};
+
+let sum = fn(arr) {
+    fold(arr, 0, fn(initial, element) { initial + element });
+};
+
+sum([1, 2, 3, 4, 5]);`,
 };
