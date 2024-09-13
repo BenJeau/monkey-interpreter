@@ -57,10 +57,18 @@ function App() {
     try {
       result = execute(input) as EvaluationResult;
     } catch (error) {
+      const errors = [];
+
+      if (error instanceof Error) {
+        errors.push(error.name + ": " + error.message);
+      } else {
+        errors.push("unknown error");
+      }
+
       result = {
         statements: [],
         program: input,
-        errors: [error.name + ": " + error.message],
+        errors: errors,
         environment: undefined,
         output: undefined,
       };
