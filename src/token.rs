@@ -9,6 +9,7 @@ use crate::parser::ExpressionPrecedence;
 pub enum Token {
     // Literals
     Integer(isize),
+    String(String),
 
     // Identifiers
     Identifier(String),
@@ -71,6 +72,7 @@ impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Token::Integer(i) => write!(f, "{i}"),
+            Token::String(s) => write!(f, "\"{s}\""),
             Token::Identifier(i) => write!(f, "{i}"),
             Token::EqualSign => write!(f, "="),
             Token::PlusSign => write!(f, "+"),

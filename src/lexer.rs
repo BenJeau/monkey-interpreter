@@ -108,6 +108,7 @@ impl Lexer {
             '0'..='9' => {
                 return Token::Integer(self.read_integer());
             }
+            '"' => Token::String(self.read_string()),
             _ => Token::Illegal(ch),
         };
 
@@ -130,6 +131,17 @@ impl Lexer {
             self.read_char();
         }
         self.input[position..self.position].parse().unwrap()
+    }
+
+    fn read_string(&mut self) -> String {
+        let position = self.position + 1;
+        loop {
+            self.read_char();
+            if matches!(self.ch, Some('"')) {
+                break;
+            }
+        }
+        self.input[position..self.position].to_string()
     }
 }
 
@@ -157,7 +169,10 @@ if (5 < 10) {
 }
 
 10 == 10;
-10 != 9;"#;
+10 != 9;
+"foobar"
+"foo bar"
+"#;
 
         let tests = &[
             Token::Let,
@@ -233,6 +248,8 @@ if (5 < 10) {
             Token::NotEqual,
             Token::Integer(9),
             Token::Semicolon,
+            Token::String("foobar".into()),
+            Token::String("foo bar".into()),
             Token::Eof,
         ];
 
