@@ -48,13 +48,14 @@ function App() {
       return;
     }
 
-    setTokens(lexer(input));
-
     let result: EvaluationResult | undefined = undefined;
     let crashed = false;
+    let start = performance.now();
 
-    const start = performance.now();
     try {
+      setTokens(lexer(input));
+
+      start = performance.now();
       result = execute(input) as EvaluationResult;
     } catch (error) {
       const errors = [];
