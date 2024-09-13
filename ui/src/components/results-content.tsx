@@ -4,17 +4,21 @@ const ResultsContent = ({
   tab,
   results,
   tokens,
+  interpreterCrashed,
 }: {
   tab: number;
   results?: EvaluationResult;
   tokens: Token[];
+  interpreterCrashed: boolean;
 }) => (
   <pre className="overflow-auto whitespace-break-spaces p-2 shadow-inner">
     {tab === 0 && (
       <div>
         {(results?.errors.length ?? 0) > 0 && (
           <>
-            <h3 className="font-bold text-red-500">Errors</h3>
+            <h3 className="font-bold text-red-500">
+              {interpreterCrashed ? "Interpreter Crashed!" : "Errors"}{" "}
+            </h3>
             <ul className="list-inside list-disc">
               {results?.errors.map((error, index) => (
                 <li key={index}>{error}</li>

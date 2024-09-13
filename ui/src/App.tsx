@@ -35,6 +35,7 @@ function App() {
     return atob(hash.slice(1));
   });
 
+  const [interpreterCrashed, setInterpreterCrashed] = useState(false);
   const [tokens, setTokens] = useState<Token[]>([]);
   const [results, setResults] = useState<EvaluationResult | undefined>(
     undefined,
@@ -49,12 +50,27 @@ function App() {
 
     setTokens(lexer(input));
 
+    let result: EvaluationResult | undefined = undefined;
+    let crashed = false;
+
     const start = performance.now();
-    const result = execute(input) as EvaluationResult;
+    try {
+      result = execute(input) as EvaluationResult;
+    } catch (error) {
+      result = {
+        statements: [],
+        program: input,
+        errors: [error.name + ": " + error.message],
+        environment: undefined,
+        output: undefined,
+      };
+      crashed = true;
+    }
     const end = performance.now();
 
     setTime(end - start);
 
+    setInterpreterCrashed(crashed);
     setResults(result);
   }, [input]);
 
@@ -110,7 +126,12 @@ function App() {
             time={time}
             numberOfErrors={results?.errors.length ?? 0}
           />
-          <ResultsContent tab={tab} results={results} tokens={tokens} />
+          <ResultsContent
+            tab={tab}
+            results={results}
+            tokens={tokens}
+            interpreterCrashed={interpreterCrashed}
+          />
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>
