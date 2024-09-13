@@ -178,24 +178,24 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 .collect::<Option<Vec<Object>>>()?,
         )),
         Expression::Index { left, index } => {
-            let array = eval_expression(left, environment)?;
-
-            if matches!(array, Object::Error(_)) {
-                return Some(array);
+            let left = eval_expression(left, environment)?;
+            if matches!(left, Object::Error(_)) {
+                return Some(left);
             }
 
             let index = eval_expression(index, environment)?;
-
             if matches!(index, Object::Error(_)) {
                 return Some(index);
             }
 
-            if let (Object::Array(array), Object::Integer(index)) = (&array, &index) {
+            if let (Object::Array(array), Object::Integer(index)) = (&left, &index) {
                 Some(array.get(*index as usize).cloned().unwrap_or_default())
+            } else if let Object::Hash(map) = &left {
+                Some(map.get(&index).cloned().unwrap_or_default())
             } else {
                 Some(Object::Error(format!(
                     "index operator not supported: {} With index of: {}",
-                    array.kind(),
+                    left.kind(),
                     index.kind(),
                 )))
             }
@@ -868,5 +868,31 @@ sum([1, 2, 3, 4, 5]);
                 (Object::Boolean(false), Object::Integer(6))
             ]))),
         );
+    }
+
+    #[test]
+    fn test_hash_index_expressions() {
+        let tests = &[
+            (r#"{"foo": 5}["foo"]"#, Object::Integer(5)),
+            (r#"{"foo": 5}["bar"]"#, Object::Null),
+            (r#"let key = "foo"; {"foo": 5}[key]"#, Object::Integer(5)),
+            (r#"{}["foo"]"#, Object::Null),
+            (r#"{5: 5}[5]"#, Object::Integer(5)),
+            (r#"{true: 5}[true]"#, Object::Integer(5)),
+            (r#"{false: 5}[false]"#, Object::Integer(5)),
+        ];
+
+        for (input, expected) in tests.into_iter().cloned() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
+
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(expected.clone()),
+                "test {}",
+                input
+            );
+        }
     }
 }
