@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::evaluator::object::Object;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 pub struct Environment {
     store: BTreeMap<String, Object>,

@@ -1,6 +1,8 @@
+use std::collections::BTreeMap;
+
 use crate::{ast::BlockStatement, evaluator::environment::Environment};
 
-#[derive(PartialEq, Eq, Debug, Clone, Default)]
+#[derive(PartialEq, Eq, Debug, Clone, Default, Ord, PartialOrd)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 #[cfg_attr(
     target_family = "wasm",
@@ -20,6 +22,7 @@ pub enum Object {
     #[cfg_attr(target_family = "wasm", serde(skip))]
     Builtin(fn(&[Self]) -> Option<Self>),
     Array(Vec<Object>),
+    Hash(BTreeMap<Object, Object>),
     #[default]
     Null,
 }
@@ -35,6 +38,7 @@ impl Object {
             Object::Function { .. } => "FUNCTION",
             Object::Builtin(_) => "BUILTIN",
             Object::Array(_) => "ARRAY",
+            Object::Hash(_) => "HASH",
             Object::Null => "NULL",
         }
     }
@@ -58,6 +62,16 @@ impl Object {
                     elements
                         .iter()
                         .map(|element| element.inspect())
+                        .collect::<Vec<_>>()
+                        .join(", ")
+                )
+            }
+            Object::Hash(elements) => {
+                format!(
+                    "{{{}}}",
+                    elements
+                        .iter()
+                        .map(|(key, value)| format!("{}: {}", key.inspect(), value.inspect()))
                         .collect::<Vec<_>>()
                         .join(", ")
                 )

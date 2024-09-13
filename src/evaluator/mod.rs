@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
     ast::{BlockStatement, Expression, Statement},
     evaluator::{environment::Environment, object::Object},
@@ -198,7 +200,25 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 )))
             }
         }
-        Expression::HashLiteral(_) => todo!(),
+        Expression::HashLiteral(map) => {
+            let mut expression_map = BTreeMap::new();
+
+            for (key, value) in map {
+                let evaluated_key = eval_expression(key, environment)?;
+                if matches!(evaluated_key, Object::Error(_)) {
+                    return Some(evaluated_key);
+                }
+
+                let evaluated_value = eval_expression(value, environment)?;
+                if matches!(evaluated_value, Object::Error(_)) {
+                    return Some(evaluated_value);
+                }
+
+                expression_map.insert(evaluated_key, evaluated_value);
+            }
+
+            Some(Object::Hash(expression_map))
+        }
     }
 }
 
@@ -818,6 +838,35 @@ sum([1, 2, 3, 4, 5]);
         assert_eq!(
             eval_program(&program, &mut environment),
             Some(Object::Integer(15)),
+        );
+    }
+
+    #[test]
+    fn test_hash_literals() {
+        let input = r#"let two = "two";
+{
+    "one": 10 - 9,
+    two: 1 + 1,
+    "thr" + "ee": 6 / 2,
+    4: 4,
+    true: 5,
+    false: 6
+}"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Hash(BTreeMap::from([
+                (Object::String("one".into()), Object::Integer(1)),
+                (Object::String("two".into()), Object::Integer(2)),
+                (Object::String("three".into()), Object::Integer(3)),
+                (Object::Integer(4), Object::Integer(4)),
+                (Object::Boolean(true), Object::Integer(5)),
+                (Object::Boolean(false), Object::Integer(6))
+            ]))),
         );
     }
 }
