@@ -46,9 +46,7 @@ const ResultsContent = ({
       </>
     )}
     {tab === 3 &&
-      (results?.program ? (
-        results.program.split(";").join(";\n")
-      ) : (
+      (results?.program ?? (
         <span className="italic opacity-50">No parsed program</span>
       ))}
   </pre>
