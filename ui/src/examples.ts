@@ -68,6 +68,7 @@ let sum = fn(arr) {
 
 sum([1, 2, 3, 4, 5]);`,
   "Hash Maps": `
+let two = "two";
 let myHash = {
   "one": 1,
   two: 2,
@@ -76,6 +77,6 @@ let myHash = {
   false: 5
 };
 
-myHash["one"];
+myHash["t" + "wo"];
   `,
 };
