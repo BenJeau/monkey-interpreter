@@ -86,6 +86,8 @@ impl Lexer {
             ')' => Token::RightParen,
             '{' => Token::LeftBrace,
             '}' => Token::RightBrace,
+            '[' => Token::LeftBracket,
+            ']' => Token::RightBracket,
             ',' => Token::Comma,
             ';' => Token::Semicolon,
             ' ' | '\t' | '\n' | '\r' => {
@@ -172,6 +174,7 @@ if (5 < 10) {
 10 != 9;
 "foobar"
 "foo bar"
+[1, 2];
 "#;
 
         let tests = &[
@@ -250,6 +253,12 @@ if (5 < 10) {
             Token::Semicolon,
             Token::String("foobar".into()),
             Token::String("foo bar".into()),
+            Token::LeftBracket,
+            Token::Integer(1),
+            Token::Comma,
+            Token::Integer(2),
+            Token::RightBracket,
+            Token::Semicolon,
             Token::Eof,
         ];
 

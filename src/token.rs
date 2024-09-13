@@ -34,6 +34,8 @@ pub enum Token {
     RightParen,
     LeftBrace,
     RightBrace,
+    LeftBracket,
+    RightBracket,
 
     // Keywords
     Function,
@@ -90,6 +92,8 @@ impl std::fmt::Display for Token {
             Token::RightParen => write!(f, ")"),
             Token::LeftBrace => write!(f, "{{"),
             Token::RightBrace => write!(f, "}}"),
+            Token::LeftBracket => write!(f, "["),
+            Token::RightBracket => write!(f, "]"),
             Token::Function => write!(f, "fn"),
             Token::True => write!(f, "true"),
             Token::False => write!(f, "false"),
