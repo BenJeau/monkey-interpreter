@@ -86,7 +86,7 @@ function App() {
       >
         <ResizablePanel
           minSize={30}
-          className="flex flex-col rounded-t-2xl border border-b-0 border-border bg-transparent shadow-inner md:rounded-s-2xl md:rounded-t-none md:border-b md:border-e-0"
+          className="flex flex-col rounded-t-2xl border border-b-0 border-border bg-transparent shadow-inner md:rounded-none md:rounded-s-2xl md:border-b md:border-e-0"
         >
           <CodeInputHeader
             hasInput={input !== undefined}
@@ -101,7 +101,7 @@ function App() {
         </ResizablePanel>
         <ResizableHandle withHandle />
         <ResizablePanel
-          className="flex-1 overflow-hidden rounded-b-2xl border border-t-0 border-border bg-background/50 text-sm shadow-inner md:rounded-b-none md:rounded-e-2xl md:border-s-0 md:border-t"
+          className="flex-1 overflow-hidden rounded-b-2xl border border-t-0 border-border bg-background/50 text-sm shadow-inner md:rounded-none md:rounded-e-2xl md:border-s-0 md:border-t"
           minSize={30}
         >
           <ResultsHeader tab={tab} setTab={setTab} time={time} />
