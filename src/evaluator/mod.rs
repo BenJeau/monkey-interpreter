@@ -176,7 +176,27 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 .collect::<Option<Vec<Object>>>()?,
         )),
         Expression::Index { left, index } => {
-            todo!()
+            let array = eval_expression(&left, environment)?;
+
+            if matches!(array, Object::Error(_)) {
+                return Some(array);
+            }
+
+            let index = eval_expression(&index, environment)?;
+
+            if matches!(index, Object::Error(_)) {
+                return Some(index);
+            }
+
+            if let (Object::Array(array), Object::Integer(index)) = (&array, &index) {
+                Some(array.get(*index as usize).cloned().unwrap_or_default())
+            } else {
+                Some(Object::Error(format!(
+                    "Index operator not supported: {} With index of: {}",
+                    array.kind(),
+                    index.kind(),
+                )))
+            }
         }
     }
 }
@@ -463,6 +483,10 @@ mod tests {
             ),
             ("foobar", "Identifier not found: foobar"),
             ("\"Hello\" - \"World\"", "Unknown operator: STRING - STRING"),
+            (
+                "[1,2,3][true]",
+                "Index operator not supported: ARRAY With index of: BOOLEAN",
+            ),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
@@ -675,5 +699,40 @@ test(5);
                 Object::Integer(6)
             ])),
         );
+    }
+
+    #[test]
+    fn test_array_index_expressions() {
+        let tests = &[
+            ("[1, 2, 3][0]", Object::Integer(1)),
+            ("[1, 2, 3][1]", Object::Integer(2)),
+            ("[1, 2, 3][2]", Object::Integer(3)),
+            ("let i = 0; [1][i];", Object::Integer(1)),
+            ("[1, 2, 3][1 + 1];", Object::Integer(3)),
+            ("let myArray = [1, 2, 3]; myArray[2];", Object::Integer(3)),
+            (
+                "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
+                Object::Integer(6),
+            ),
+            (
+                "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
+                Object::Integer(2),
+            ),
+            ("[1, 2, 3][3]", Object::Null),
+            ("[1, 2, 3][-1]", Object::Null),
+        ];
+
+        for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
+            let mut parser = Parser::new(Lexer::new(input.into()));
+            let program = parser.parse_program().expect("Failed to parse program");
+            let mut environment = Environment::new();
+
+            assert_eq!(
+                eval_program(&program, &mut environment),
+                Some(expected.clone()),
+                "test {}",
+                index
+            );
+        }
     }
 }

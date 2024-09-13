@@ -1,6 +1,6 @@
 use crate::{ast::BlockStatement, evaluator::environment::Environment};
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Default)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 #[cfg_attr(
     target_family = "wasm",
@@ -19,6 +19,7 @@ pub enum Object {
     },
     Builtin(fn(&[Self]) -> Option<Self>),
     Array(Vec<Object>),
+    #[default]
     Null,
 }
 
