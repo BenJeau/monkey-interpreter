@@ -71,6 +71,10 @@ pub enum Expression {
         body: BlockStatement,
     },
     Array(Vec<Expression>),
+    Index {
+        left: Box<Expression>,
+        index: Box<Expression>,
+    },
 }
 
 impl std::fmt::Display for Expression {
@@ -130,6 +134,9 @@ impl std::fmt::Display for Expression {
                     }
                 }
                 write!(f, "]")
+            }
+            Self::Index { left, index } => {
+                write!(f, "({left}[{index}])")
             }
         }
     }

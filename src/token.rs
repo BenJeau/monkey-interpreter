@@ -65,6 +65,7 @@ impl Token {
             Token::Equal => ExpressionPrecedence::Equals,
             Token::NotEqual => ExpressionPrecedence::Equals,
             Token::LeftParen => ExpressionPrecedence::Call,
+            Token::LeftBracket => ExpressionPrecedence::Index,
             _ => ExpressionPrecedence::Lowest,
         }
     }

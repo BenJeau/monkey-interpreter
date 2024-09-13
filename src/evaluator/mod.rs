@@ -175,6 +175,9 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 .map(|element| eval_expression(element, environment))
                 .collect::<Option<Vec<Object>>>()?,
         )),
+        Expression::Index { left, index } => {
+            todo!()
+        }
     }
 }
 

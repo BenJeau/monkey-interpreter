@@ -22,6 +22,7 @@ pub enum ExpressionPrecedence {
     Product,     //*
     Prefix,      //-Xor!X
     Call,        // myFunction(X)
+    Index,       // array[index]
 }
 
 impl Parser {
@@ -162,6 +163,10 @@ impl Parser {
                     self.next_token();
                     self.parse_call_expression(left.clone())
                 }
+                Token::LeftBracket => {
+                    self.next_token();
+                    self.parse_index_expression(left.clone())
+                }
                 _ => {
                     self.errors.push(format!(
                         "no infix statement parser for {}",
@@ -179,6 +184,21 @@ impl Parser {
         }
 
         Some(left)
+    }
+
+    fn parse_index_expression(&mut self, left: Expression) -> Option<Expression> {
+        self.next_token();
+        let index = self.parse_expression(ExpressionPrecedence::Lowest)?;
+
+        if self.peek_token != Some(Token::RightBracket) {
+            return None;
+        }
+        self.next_token();
+
+        return Some(Expression::Index {
+            left: Box::new(left),
+            index: Box::new(index),
+        });
     }
 
     fn parse_array_literal(&mut self) -> Option<Expression> {
@@ -761,6 +781,14 @@ return true;"#;
                 "add(a + b + c * d / f + g)",
                 "add((((a + b) + ((c * d) / f)) + g))",
             ),
+            (
+                "a * [1, 2, 3, 4][b * c] * d",
+                "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+            ),
+            (
+                "add(a * b[2], b[1], 2 * [1, 2][1])",
+                "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+            ),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
@@ -970,6 +998,31 @@ return true;"#;
                         rh_expression: Box::new(Expression::Integer(3)),
                     },
                 ])
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_index_expressions() {
+        let input = "myArray[1 + 1]";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::Index {
+                    left: Box::new(Expression::Identifier("myArray".into())),
+                    index: Box::new(Expression::InfixOperator {
+                        operator: Token::PlusSign,
+                        lh_expression: Box::new(Expression::Integer(1)),
+                        rh_expression: Box::new(Expression::Integer(1)),
+                    }),
+                }
             }
         )
     }
