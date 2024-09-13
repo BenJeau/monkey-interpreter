@@ -1,4 +1,8 @@
-use crate::{ast, evaluator, lexer, parser};
+use crate::{
+    ast,
+    evaluator::{self, object::Object},
+    lexer, parser,
+};
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
@@ -38,7 +42,12 @@ pub fn execute(input: &str) -> JsValue {
     result.statements = program.statements;
     result.errors = parser.errors;
     result.environment = Some(environment);
-    result.output = output.map(|output| output.inspect());
+
+    if let Some(Object::Error(error)) = output {
+        result.errors.push(error.clone());
+    } else {
+        result.output = output.map(|output| output.inspect());
+    }
 
     serde_wasm_bindgen::to_value(&result).unwrap()
 }
