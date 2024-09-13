@@ -172,12 +172,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
         Expression::Array(elements) => Some(Object::Array(
             elements
                 .iter()
-                .map(|element| {
-                    element
-                        .as_ref()
-                        .map(|element| eval_expression(element, environment))
-                        .unwrap_or(Some(Object::Null))
-                })
+                .map(|element| eval_expression(element, environment))
                 .collect::<Option<Vec<Object>>>()?,
         )),
     }

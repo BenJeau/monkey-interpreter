@@ -183,33 +183,8 @@ impl Parser {
 
     fn parse_array_literal(&mut self) -> Option<Expression> {
         Some(Expression::Array(
-            self.parse_expression_list(Token::RightBracket),
+            self.parse_expression_list(Token::RightBracket)?,
         ))
-    }
-
-    fn parse_expression_list(&mut self, end_token: Token) -> Vec<Option<Expression>> {
-        if self.peek_token.as_ref() == Some(&end_token) {
-            self.next_token();
-            return vec![];
-        }
-
-        self.next_token();
-        let mut list = vec![self.parse_expression(ExpressionPrecedence::Lowest)];
-
-        while self.peek_token == Some(Token::Comma) {
-            self.next_token();
-            self.next_token();
-            list.push(self.parse_expression(ExpressionPrecedence::Lowest));
-        }
-
-        if self.peek_token != Some(end_token) {
-            // TODO: double check this logic, unsure if this is correct
-            return vec![];
-        }
-
-        self.next_token();
-
-        return list;
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
@@ -397,14 +372,14 @@ impl Parser {
     fn parse_call_expression(&mut self, name: Expression) -> Option<Expression> {
         Some(Expression::FunctionCall {
             name: Box::new(name),
-            arguments: self.parse_call_arguments()?,
+            arguments: self.parse_expression_list(Token::RightParen)?,
         })
     }
 
-    fn parse_call_arguments(&mut self) -> Option<Vec<Expression>> {
+    fn parse_expression_list(&mut self, end_token: Token) -> Option<Vec<Expression>> {
         let mut arguments = Vec::new();
 
-        if self.peek_token == Some(Token::RightParen) {
+        if self.peek_token.as_ref() == Some(&end_token) {
             self.next_token();
             return Some(arguments);
         };
@@ -419,7 +394,7 @@ impl Parser {
             arguments.push(self.parse_expression(ExpressionPrecedence::Lowest)?);
         }
 
-        if self.peek_token != Some(Token::RightParen) {
+        if self.peek_token != Some(end_token) {
             self.errors.push(format!(
                 "expected next token to be RightParen, got {:?}",
                 self.peek_token
@@ -983,17 +958,17 @@ return true;"#;
             program.statements[0],
             Statement::Expression {
                 value: Expression::Array(vec![
-                    Some(Expression::Integer(1)),
-                    Some(Expression::InfixOperator {
+                    Expression::Integer(1),
+                    Expression::InfixOperator {
                         operator: Token::Asterisk,
                         lh_expression: Box::new(Expression::Integer(2)),
                         rh_expression: Box::new(Expression::Integer(2)),
-                    }),
-                    Some(Expression::InfixOperator {
+                    },
+                    Expression::InfixOperator {
                         operator: Token::PlusSign,
                         lh_expression: Box::new(Expression::Integer(3)),
                         rh_expression: Box::new(Expression::Integer(3)),
-                    }),
+                    },
                 ])
             }
         )

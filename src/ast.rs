@@ -70,7 +70,7 @@ pub enum Expression {
         arguments: Vec<String>,
         body: BlockStatement,
     },
-    Array(Vec<Option<Expression>>),
+    Array(Vec<Expression>),
 }
 
 impl std::fmt::Display for Expression {
@@ -124,11 +124,7 @@ impl std::fmt::Display for Expression {
             Self::Array(elements) => {
                 write!(f, "[")?;
                 for (index, element) in elements.iter().enumerate() {
-                    if let Some(element) = element {
-                        write!(f, "{element}")?;
-                    } else {
-                        write!(f, "null")?;
-                    }
+                    write!(f, "{element}")?;
                     if index != elements.len() - 1 {
                         write!(f, ", ")?;
                     }
