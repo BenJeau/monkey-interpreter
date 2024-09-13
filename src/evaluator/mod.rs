@@ -77,6 +77,7 @@ fn eval_expression(expression: &Expression, environment: &mut Environment) -> Op
                 Some(Object::Error(format!("Identifier not found: {}", name)))
             }
         }
+        Expression::String(value) => Some(Object::String(value.to_string())),
         Expression::PrefixOperator {
             operator,
             expression,

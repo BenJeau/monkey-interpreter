@@ -9,6 +9,7 @@ use crate::{ast::BlockStatement, evaluator::environment::Environment};
 pub enum Object {
     Integer(isize),
     Boolean(bool),
+    String(String),
     Return(Box<Object>),
     Error(String),
     Function {
@@ -24,6 +25,7 @@ impl Object {
         match self {
             Object::Integer(_) => "INTEGER",
             Object::Boolean(_) => "BOOLEAN",
+            Object::String(_) => "STRING",
             Object::Return(_) => "RETURN",
             Object::Error(_) => "ERROR",
             Object::Function { .. } => "FUNCTION",
@@ -35,6 +37,7 @@ impl Object {
         match self {
             Object::Integer(value) => value.to_string(),
             Object::Boolean(value) => value.to_string(),
+            Object::String(value) => value.to_string(),
             Object::Return(value) => value.inspect(),
             Object::Error(value) => format!("Error: {}", value),
             Object::Function {

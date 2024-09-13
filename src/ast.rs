@@ -47,6 +47,7 @@ pub enum Expression {
     Integer(isize),
     Identifier(String),
     Boolean(bool),
+    String(String),
     PrefixOperator {
         operator: Token,
         expression: Box<Expression>,
@@ -83,6 +84,7 @@ impl std::fmt::Display for Expression {
                     write!(f, "false")
                 }
             }
+            Self::String(value) => write!(f, "{value}"),
             Self::PrefixOperator {
                 operator,
                 expression,

@@ -128,6 +128,7 @@ impl Parser {
         let mut left = match self.current_token.clone()? {
             Token::Integer(integer) => Some(integer.into()),
             Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
+            Token::String(string) => Some(Expression::String(string)),
             Token::True => Some(true.into()),
             Token::False => Some(false.into()),
             Token::PlusSign => self.parse_prefix_expression(),
@@ -914,6 +915,24 @@ return true;"#;
                         },
                     ]
                 }
+            }
+        )
+    }
+
+    #[test]
+    fn test_string_literal_expression() {
+        let input = "\"hello world\"";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::String("hello world".to_string())
             }
         )
     }

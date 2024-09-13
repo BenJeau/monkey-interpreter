@@ -137,7 +137,7 @@ impl Lexer {
         let position = self.position + 1;
         loop {
             self.read_char();
-            if matches!(self.ch, Some('"')) {
+            if self.ch == Some('"') || self.ch == Some(0.into()) {
                 break;
             }
         }
