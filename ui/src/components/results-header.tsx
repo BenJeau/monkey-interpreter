@@ -48,7 +48,7 @@ const ResultsHeader = ({
     </div>
     <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
       <p className="whitespace-nowrap">No errors</p>
-      <Badge variant="secondary">{time} ms</Badge>
+      <Badge variant="secondary">{time.toFixed(2)} ms</Badge>
     </div>
   </div>
 );
