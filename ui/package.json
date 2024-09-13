@@ -13,7 +13,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@benjeau/monkey-interpreter": "0.2.2",
+    "@benjeau/monkey-interpreter": "0.3.0",
     "@monaco-editor/react": "^4.6.0",
     "@radix-ui/react-icons": "^1.3.0",
     "@radix-ui/react-slot": "^1.1.0",
