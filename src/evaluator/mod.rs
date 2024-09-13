@@ -1,8 +1,8 @@
 use crate::{
     ast::{BlockStatement, Expression, Statement},
     evaluator::{environment::Environment, object::Object},
-    lexer::Token,
     parser::Program,
+    token::Token,
 };
 
 pub mod environment;

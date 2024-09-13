@@ -4,6 +4,7 @@ mod ast;
 mod evaluator;
 mod lexer;
 mod parser;
+mod token;
 
 const PROMPT: &str = "λ> ";
 

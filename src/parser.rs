@@ -1,6 +1,7 @@
 use crate::{
     ast::{BlockStatement, Expression, Statement},
-    lexer::{Lexer, Token},
+    lexer::Lexer,
+    token::Token,
 };
 
 #[derive(Default)]
