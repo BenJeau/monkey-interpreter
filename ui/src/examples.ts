@@ -1,7 +1,7 @@
 export const codeExamples: Record<string, string> = {
   "Hello, World!": `
 let message = "Hello, World!";
-print(message);
+message;
   `,
   Fibonacci: `
 let fib = fn(n) {
@@ -29,5 +29,9 @@ let add = fn(a, b) {
 };
 
 add(2, 3);
+  `,
+  "Array Indexing": `
+let myArray = [1, 2, 3];
+myArray[1 * 3 - 2];
   `,
 };
