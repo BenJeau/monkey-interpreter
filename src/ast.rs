@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::token::Token;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 #[cfg_attr(
     target_family = "wasm",
@@ -24,7 +24,7 @@ impl std::fmt::Display for Statement {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 pub struct BlockStatement {
     pub statements: Vec<Statement>,
@@ -39,7 +39,7 @@ impl std::fmt::Display for BlockStatement {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 #[cfg_attr(
     target_family = "wasm",

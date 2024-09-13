@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crate::{
     ast::{BlockStatement, Expression, Statement},
     lexer::Lexer,
@@ -131,6 +133,7 @@ impl Parser {
             Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
             Token::String(string) => Some(Expression::String(string)),
             Token::LeftBracket => self.parse_array_literal(),
+            Token::LeftBrace => self.parse_hash_literal(),
             Token::True => Some(true.into()),
             Token::False => Some(false.into()),
             Token::PlusSign => self.parse_prefix_expression(),
@@ -184,6 +187,47 @@ impl Parser {
         }
 
         Some(left)
+    }
+
+    fn parse_hash_literal(&mut self) -> Option<Expression> {
+        let mut map = BTreeMap::new();
+
+        while self.peek_token != Some(Token::RightBrace) {
+            self.next_token();
+            let key = self.parse_expression(ExpressionPrecedence::Lowest)?;
+
+            if self.peek_token != Some(Token::Colon) {
+                self.errors.push(format!(
+                    "expected next token to be Colon, got {:?}",
+                    self.peek_token
+                ));
+                return None;
+            }
+            self.next_token();
+            self.next_token();
+
+            let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
+
+            map.insert(key, value);
+
+            if self.peek_token != Some(Token::RightBrace) {
+                if self.peek_token != Some(Token::Comma) {
+                    self.errors.push(format!(
+                        "expected next token to be Comma, got {:?}",
+                        self.peek_token
+                    ));
+                    return None;
+                }
+                self.next_token();
+            }
+        }
+
+        if self.peek_token != Some(Token::RightBrace) {
+            return None;
+        }
+        self.next_token();
+
+        Some(Expression::HashLiteral(map))
     }
 
     fn parse_index_expression(&mut self, left: Expression) -> Option<Expression> {
@@ -1023,6 +1067,138 @@ return true;"#;
                         rh_expression: Box::new(Expression::Integer(1)),
                     }),
                 }
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_hash_literals_string_keys() {
+        let input = r#"{"one": 1, "two": 2, "three": 3}"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::HashLiteral(BTreeMap::from([
+                    (Expression::String("one".into()), Expression::Integer(1)),
+                    (Expression::String("two".into()), Expression::Integer(2)),
+                    (Expression::String("three".into()), Expression::Integer(3)),
+                ]))
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_hash_literals_integer_keys() {
+        let input = r#"{1: "one", 2: "two", 3: "three"}"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::HashLiteral(BTreeMap::from([
+                    (Expression::Integer(1), Expression::String("one".into())),
+                    (Expression::Integer(2), Expression::String("two".into())),
+                    (Expression::Integer(3), Expression::String("three".into())),
+                ]))
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_hash_literals_boolean_keys() {
+        let input = r#"{true: "true, that's right", false: "nope"}"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::HashLiteral(BTreeMap::from([
+                    (
+                        Expression::Boolean(true),
+                        Expression::String("true, that's right".into())
+                    ),
+                    (
+                        Expression::Boolean(false),
+                        Expression::String("nope".into())
+                    ),
+                ]))
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_empty_hash_literal() {
+        let input = "{}";
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::HashLiteral(BTreeMap::new())
+            }
+        )
+    }
+
+    #[test]
+    fn test_parsing_hash_literals_with_expression_values() {
+        let input = r#"{"one": 0 + 1, "two": 10 - 8, "three": 15 / 5}"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+
+        assert_eq!(parser.errors.len(), 0, "{:?}", parser.errors);
+        assert_eq!(program.statements.len(), 1, "{:?}", program.statements);
+
+        assert_eq!(
+            program.statements[0],
+            Statement::Expression {
+                value: Expression::HashLiteral(BTreeMap::from([
+                    (
+                        Expression::String("one".into()),
+                        Expression::InfixOperator {
+                            operator: Token::PlusSign,
+                            lh_expression: Box::new(Expression::Integer(0)),
+                            rh_expression: Box::new(Expression::Integer(1)),
+                        }
+                    ),
+                    (
+                        Expression::String("two".into()),
+                        Expression::InfixOperator {
+                            operator: Token::MinusSign,
+                            lh_expression: Box::new(Expression::Integer(10)),
+                            rh_expression: Box::new(Expression::Integer(8)),
+                        }
+                    ),
+                    (
+                        Expression::String("three".into()),
+                        Expression::InfixOperator {
+                            operator: Token::Slash,
+                            lh_expression: Box::new(Expression::Integer(15)),
+                            rh_expression: Box::new(Expression::Integer(5)),
+                        }
+                    ),
+                ]))
             }
         )
     }

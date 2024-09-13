@@ -1,6 +1,6 @@
 use crate::parser::ExpressionPrecedence;
 
-#[derive(PartialEq, Eq, Debug, Clone)]
+#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 #[cfg_attr(
     target_family = "wasm",
