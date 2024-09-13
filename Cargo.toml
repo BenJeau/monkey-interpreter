@@ -4,7 +4,7 @@ edition = "2021"
 license = "MIT"
 name = "monkey-interpreter"
 repository = "https://github.com/BenJeau/monkey-interpreter"
-version = "0.2.2"
+version = "0.3.0"
 
 [dependencies]
 
