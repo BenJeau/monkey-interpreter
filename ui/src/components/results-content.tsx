@@ -10,12 +10,26 @@ const ResultsContent = ({
   tokens: Token[];
 }) => (
   <pre className="overflow-auto p-2 shadow-inner">
-    {tab === 0 &&
-      (results?.output ? (
-        results.output
-      ) : (
-        <span className="italic opacity-50">No output</span>
-      ))}
+    {tab === 0 && (
+      <div>
+        {(results?.errors.length ?? 0) > 0 && (
+          <>
+            <h3 className="font-bold text-red-500">Errors</h3>
+            <ul className="list-inside list-disc">
+              {results?.errors.map((error, index) => (
+                <li key={index}>{error}</li>
+              ))}
+            </ul>
+            <hr className="m-4 border-border" />
+          </>
+        )}
+        {results?.output ? (
+          results.output
+        ) : (
+          <span className="italic opacity-50">No output</span>
+        )}
+      </div>
+    )}
     {tab === 1 && (
       <>
         {tokens.map((token, index) => (

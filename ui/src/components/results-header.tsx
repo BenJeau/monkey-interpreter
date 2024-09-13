@@ -6,10 +6,12 @@ const ResultsHeader = ({
   tab,
   setTab,
   time,
+  numberOfErrors,
 }: {
   tab: number;
   setTab: (tab: 0 | 1 | 2 | 3) => void;
   time: number;
+  numberOfErrors: number;
 }) => (
   <div className="flex justify-between gap-2 border-b border-border bg-background p-2">
     <div className="flex flex-wrap gap-2">
@@ -47,10 +49,21 @@ const ResultsHeader = ({
       </Badge>
     </div>
     <div className="flex flex-wrap items-center justify-end gap-2 text-xs">
-      <p className="whitespace-nowrap">No errors</p>
+      <p className="whitespace-nowrap">{errorMessage(numberOfErrors)}</p>
       <Badge variant="secondary">{time.toFixed(2)} ms</Badge>
     </div>
   </div>
 );
+
+const errorMessage = (numberOfErrors: number) => {
+  if (numberOfErrors === 0) {
+    return "No errors";
+  }
+  let baseMessage = `${numberOfErrors.toLocaleString()} error`;
+  if (numberOfErrors > 1) {
+    baseMessage += "s";
+  }
+  return baseMessage;
+};
 
 export default ResultsHeader;

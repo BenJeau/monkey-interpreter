@@ -104,7 +104,12 @@ function App() {
           className="flex-1 overflow-hidden rounded-b-2xl border border-t-0 border-border bg-background/50 text-sm shadow-inner md:rounded-none md:rounded-e-2xl md:border-s-0 md:border-t"
           minSize={30}
         >
-          <ResultsHeader tab={tab} setTab={setTab} time={time} />
+          <ResultsHeader
+            tab={tab}
+            setTab={setTab}
+            time={time}
+            numberOfErrors={results?.errors.length ?? 0}
+          />
           <ResultsContent tab={tab} results={results} tokens={tokens} />
         </ResizablePanel>
       </ResizablePanelGroup>
