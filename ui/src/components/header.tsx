@@ -3,8 +3,8 @@ import { BookOpenText, Origami } from "lucide-react";
 import { Npm, Github } from "@/components/icons";
 
 const Header = () => (
-  <header className="flex flex-col justify-between gap-4 p-3 md:flex-row md:items-center">
-    <div className="flex flex-row items-center gap-4">
+  <header className="flex flex-col justify-between gap-2 px-3 pb-3 pt-2 md:flex-row md:items-center md:gap-4 md:p-3">
+    <div className="flex flex-row items-center gap-2 md:gap-4">
       <div className="group">
         <div className="rounded-xl bg-teal-200 p-4 transition-all ease-out group-hover:-scale-x-100 group-hover:bg-teal-600 group-hover:text-teal-50 group-hover:shadow-inner dark:bg-teal-950 dark:text-teal-300">
           <Origami />
@@ -12,7 +12,9 @@ const Header = () => (
       </div>
       <div>
         <div className="flex flex-col items-baseline md:flex-row md:gap-2">
-          <h1 className="text-2xl font-medium">Monkey Interpreter</h1>
+          <h1 className="text-lg font-medium md:text-2xl">
+            Monkey Interpreter
+          </h1>
           <span className="text-xs">
             Made with &lt;3 by{" "}
             <a
@@ -25,7 +27,7 @@ const Header = () => (
             </a>
           </span>
         </div>
-        <p className="text-sm opacity-50">
+        <p className="text-xs opacity-50 md:text-sm">
           An interpreter built in Rust and compiled to WebAssembly
         </p>
       </div>
