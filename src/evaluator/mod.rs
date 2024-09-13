@@ -667,6 +667,25 @@ test(5);
                 r#"len("one", "two")"#,
                 Object::Error(r#"wrong number of arguments. Got 2, expected 1"#.into()),
             ),
+            ("first([1, 2, 3])", Object::Integer(1)),
+            ("first([])", Object::Null),
+            ("last([1, 2, 3])", Object::Integer(3)),
+            ("last([])", Object::Null),
+            (
+                "rest([1, 2, 3])",
+                Object::Array(vec![Object::Integer(2), Object::Integer(3)]),
+            ),
+            ("rest([1])", Object::Array(vec![])),
+            ("rest([])", Object::Null),
+            (
+                "push([1, 2, 3], true)",
+                Object::Array(vec![
+                    Object::Integer(1),
+                    Object::Integer(2),
+                    Object::Integer(3),
+                    Object::Boolean(true),
+                ]),
+            ),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
@@ -734,5 +753,70 @@ test(5);
                 index
             );
         }
+    }
+
+    #[test]
+    fn test_custom_function_map() {
+        let input = r#"
+let map = fn(arr, f) {
+    let iter = fn(arr, accumulated) {
+        if (len(arr) == 0) {
+            accumulated
+        } else {
+            iter(rest(arr), push(accumulated, f(first(arr))));
+        }
+    };
+    iter(arr, []);
+};
+
+let data = [1, 2, 3];
+let squared = fn(x) { x * x };
+
+map(data, squared);
+"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Array(vec![
+                Object::Integer(1),
+                Object::Integer(4),
+                Object::Integer(9)
+            ])),
+        );
+    }
+
+    #[test]
+    fn test_custom_function_reduce() {
+        let input = r#"
+let reduce = fn(arr, initial, f) {
+    let iter = fn(arr, accumulated) {
+        if (len(arr) == 0) {
+            accumulated
+        } else {
+            iter(rest(arr), f(accumulated, first(arr)));
+        }
+    };
+    iter(arr, initial);
+};
+
+let sum = fn(arr) {
+    reduce(arr, 0, fn(initial, element) { initial + element });
+};
+
+sum([1, 2, 3, 4, 5]);
+"#;
+
+        let mut parser = Parser::new(Lexer::new(input.into()));
+        let program = parser.parse_program().expect("Failed to parse program");
+        let mut environment = Environment::new();
+
+        assert_eq!(
+            eval_program(&program, &mut environment),
+            Some(Object::Integer(15)),
+        );
     }
 }
