@@ -128,3 +128,99 @@ impl From<BTreeMap<Object, Object>> for Object {
         Self::Hash(value)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        ast::{Expression, Statement},
+        lexer::Token,
+    };
+
+    use super::*;
+
+    #[test]
+    fn test_object_is_truthy() {
+        assert!(TRUE.is_truthy());
+        assert!(!FALSE.is_truthy());
+        assert!(!NULL.is_truthy());
+    }
+
+    #[test]
+    fn test_object_default() {
+        assert_eq!(Object::default(), NULL);
+    }
+
+    #[test]
+    fn test_object_kind() {
+        let tests = &[
+            (5.into(), "INTEGER"),
+            (TRUE, "BOOLEAN"),
+            (FALSE, "BOOLEAN"),
+            (NULL, "NULL"),
+            ("foobar".into(), "STRING"),
+            (Object::Return(Box::new(5.into())), "RETURN"),
+            (Object::Error("foobar".into()), "ERROR"),
+            (
+                Object::Function {
+                    parameters: vec![],
+                    environment: Environment::new(),
+                    body: BlockStatement::default(),
+                },
+                "FUNCTION",
+            ),
+            (Object::Builtin(|_| Some(TRUE)), "BUILTIN"),
+            (vec![TRUE, FALSE, NULL].into(), "ARRAY"),
+            (BTreeMap::from([(TRUE, "true".into())]).into(), "HASH"),
+        ];
+
+        for (input, expected) in tests.into_iter().cloned() {
+            assert_eq!(input.kind(), expected);
+        }
+    }
+
+    #[test]
+    fn test_object_inspect() {
+        let tests = &[
+            (5.into(), "5"),
+            (TRUE, "true"),
+            (FALSE, "false"),
+            ("foobar".into(), "foobar"),
+            (Object::Return(Box::new(Object::Integer(5))), "5"),
+            (Object::Error("foobar".into()), "Error: foobar"),
+            (
+                Object::Function {
+                    parameters: vec!["x".into(), "y".into()],
+                    environment: Environment::new(),
+                    body: BlockStatement {
+                        statements: vec![Statement::Expression {
+                            value: Expression::InfixOperator {
+                                operator: Token::PlusSign,
+                                lh_expression: Box::new(Expression::Identifier("x".into())),
+                                rh_expression: Box::new(Expression::Identifier("y".into())),
+                            },
+                        }],
+                    },
+                },
+                "fn(x, y) { (x + y) }",
+            ),
+            (Object::Builtin(|_| Some(TRUE)), "builtin function"),
+            (
+                Object::Array(vec![TRUE, FALSE, NULL]),
+                "[true, false, null]",
+            ),
+            (
+                Object::Hash(BTreeMap::from([
+                    (TRUE, "true".into()),
+                    (FALSE, "false".into()),
+                    (NULL, "null".into()),
+                ])),
+                r#"{false: false, true: true, null: null}"#,
+            ),
+            (NULL, "null"),
+        ];
+
+        for (input, expected) in tests.into_iter().cloned() {
+            assert_eq!(input.inspect(), expected);
+        }
+    }
+}

@@ -22,7 +22,7 @@ impl std::fmt::Display for Statement {
     }
 }
 
-#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd)]
+#[derive(PartialEq, Eq, Debug, Clone, Ord, PartialOrd, Default)]
 #[cfg_attr(target_family = "wasm", derive(serde::Serialize))]
 pub struct BlockStatement {
     pub statements: Vec<Statement>,
