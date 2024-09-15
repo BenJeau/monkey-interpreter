@@ -34,6 +34,10 @@ type Expression =
       value: boolean;
     }
   | {
+      kind: "string";
+      value: string;
+    }
+  | {
       kind: "prefix_operator";
       value: {
         operator: string;
@@ -69,6 +73,21 @@ type Expression =
         arguments: string[];
         body: Statement[];
       };
+    }
+  | {
+      kind: "array";
+      value: Expression[];
+    }
+  | {
+      kind: "index";
+      value: {
+        left: Expression;
+        index: Expression;
+      };
+    }
+  | {
+      kind: "hash_literal";
+      value: { key: Expression; value: Expression }[];
     };
 
 type Statement =
@@ -103,6 +122,10 @@ type Object =
       value: boolean;
     }
   | {
+      kind: "string";
+      value: string;
+    }
+  | {
       kind: "return";
       value: Object;
     }
@@ -119,6 +142,14 @@ type Object =
       };
     }
   | {
+      kind: "array";
+      value: Object[];
+    }
+  | {
+      kind: "hash";
+      value: Record<Object, Object>;
+    }
+  | {
       kind: "null";
     };
 
@@ -129,6 +160,10 @@ type Token =
     }
   | {
       kind: "identifier";
+      value: string;
+    }
+  | {
+      kind: "string";
       value: string;
     }
   | {
@@ -153,6 +188,9 @@ type Token =
         | "right_paren"
         | "left_brace"
         | "right_brace"
+        | "left_bracket"
+        | "right_bracket"
+        | "colon"
         | "function"
         | "true"
         | "false"
