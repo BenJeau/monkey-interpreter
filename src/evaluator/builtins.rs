@@ -2,8 +2,7 @@ use super::object::Object;
 
 pub enum Builtin {
     Len,
-    Print,
-    Println,
+    Puts,
     Exit,
     First,
     Last,
@@ -15,8 +14,7 @@ impl Builtin {
     pub const fn get(&self) -> Object {
         let function = match self {
             Self::Len => builtin_len,
-            Self::Print => builtin_print,
-            Self::Println => builtin_println,
+            Self::Puts => builtin_puts,
             Self::Exit => builtin_exit,
             Self::First => builtin_first,
             Self::Last => builtin_last,
@@ -30,8 +28,7 @@ impl Builtin {
     pub fn from_str(name: &str) -> Option<Self> {
         match name {
             "len" => Some(Self::Len),
-            "print" => Some(Self::Print),
-            "println" => Some(Self::Println),
+            "puts" => Some(Self::Puts),
             "exit" => Some(Self::Exit),
             "first" => Some(Self::First),
             "last" => Some(Self::Last),
@@ -61,15 +58,7 @@ fn builtin_len(arguments: &[Object]) -> Option<Object> {
     }
 }
 
-fn builtin_print(arguments: &[Object]) -> Option<Object> {
-    for argument in arguments {
-        print!("{}", argument.inspect());
-    }
-    println!();
-    Some(Object::Null)
-}
-
-fn builtin_println(arguments: &[Object]) -> Option<Object> {
+fn builtin_puts(arguments: &[Object]) -> Option<Object> {
     for argument in arguments {
         println!("{}", argument.inspect());
     }
