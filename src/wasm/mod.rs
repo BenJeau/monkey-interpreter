@@ -1,6 +1,6 @@
 use crate::{
     ast,
-    evaluator::{self, object::Object},
+    evaluator::{self, object::Object, Evaluator},
     lexer, parser,
 };
 use serde::Serialize;
@@ -39,7 +39,7 @@ pub fn execute(input: &str) -> JsValue {
     }
 
     let mut environment = evaluator::environment::Environment::new();
-    let output = evaluator::program.eval(&mut environment);
+    let output = program.eval(&mut environment);
 
     result.statements = program.statements;
     result.errors = parser.errors;
