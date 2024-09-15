@@ -1,10 +1,10 @@
+use evaluator::Evaluator;
 use std::io::Write;
 
 mod ast;
 mod evaluator;
 mod lexer;
 mod parser;
-mod token;
 
 const PROMPT: &str = "λ> ";
 
@@ -36,7 +36,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             continue;
         }
 
-        let evaluated = evaluator::eval_program(&program, &mut environment);
+        let evaluated = program.eval(&mut environment);
         if let Some(evaluated) = evaluated {
             println!("{}", evaluated.inspect());
         }

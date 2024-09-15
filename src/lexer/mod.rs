@@ -1,4 +1,6 @@
-use crate::token::Token;
+mod token;
+
+pub use token::Token;
 
 #[derive(Default)]
 pub struct Lexer {
@@ -60,24 +62,8 @@ impl Lexer {
         };
 
         let token = match ch {
-            '=' => {
-                if self.peek_char() == Some('=') {
-                    self.read_char();
-                    Token::Equal
-                } else {
-                    Token::EqualSign
-                }
-            }
             '+' => Token::PlusSign,
             '-' => Token::MinusSign,
-            '!' => {
-                if self.peek_char() == Some('=') {
-                    self.read_char();
-                    Token::NotEqual
-                } else {
-                    Token::ExclamationMark
-                }
-            }
             '*' => Token::Asterisk,
             '/' => Token::Slash,
             '<' => Token::LessThan,
@@ -91,6 +77,23 @@ impl Lexer {
             ',' => Token::Comma,
             ';' => Token::Semicolon,
             ':' => Token::Colon,
+            '"' => Token::String(self.read_string()),
+            '=' => {
+                if self.peek_char() == Some('=') {
+                    self.read_char();
+                    Token::Equal
+                } else {
+                    Token::EqualSign
+                }
+            }
+            '!' => {
+                if self.peek_char() == Some('=') {
+                    self.read_char();
+                    Token::NotEqual
+                } else {
+                    Token::ExclamationMark
+                }
+            }
             ' ' | '\t' | '\n' | '\r' => {
                 self.read_char();
                 return self.next_token();
@@ -111,7 +114,6 @@ impl Lexer {
             '0'..='9' => {
                 return Token::Integer(self.read_integer());
             }
-            '"' => Token::String(self.read_string()),
             _ => Token::Illegal(ch),
         };
 

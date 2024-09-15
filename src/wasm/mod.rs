@@ -6,6 +6,8 @@ use crate::{
 use serde::Serialize;
 use wasm_bindgen::prelude::*;
 
+pub mod serialization;
+
 #[derive(Serialize, Default)]
 struct EvaluationResult {
     statements: Vec<ast::Statement>,
@@ -37,7 +39,7 @@ pub fn execute(input: &str) -> JsValue {
     }
 
     let mut environment = evaluator::environment::Environment::new();
-    let output = evaluator::eval_program(&program, &mut environment);
+    let output = evaluator::program.eval(&mut environment);
 
     result.statements = program.statements;
     result.errors = parser.errors;

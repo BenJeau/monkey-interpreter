@@ -2,222 +2,238 @@ use std::collections::BTreeMap;
 
 use crate::{
     ast::{BlockStatement, Expression, Statement},
-    evaluator::{environment::Environment, object::Object},
+    evaluator::{
+        environment::Environment,
+        object::{Object, FALSE, NULL, TRUE},
+    },
+    lexer::Token,
     parser::Program,
-    token::Token,
 };
 
 mod builtins;
 pub mod environment;
 pub mod object;
 
-const NULL: Object = Object::Null;
-const TRUE: Object = Object::Boolean(true);
-const FALSE: Object = Object::Boolean(false);
-
-pub fn eval_program(program: &Program, environment: &mut Environment) -> Option<Object> {
-    let mut result = None;
-
-    for statement in program.statements.iter() {
-        result = eval_statement(statement, environment);
-
-        if let Some(Object::Return(value)) = result {
-            return Some(*value);
-        } else if matches!(result, Some(Object::Error(_))) {
-            return result;
-        }
-    }
-
-    result
+pub trait Evaluator {
+    fn eval(&self, environment: &mut Environment) -> Option<Object>;
 }
 
-fn eval_statements(statements: &[Statement], environment: &mut Environment) -> Option<Object> {
-    let mut result = None;
+impl Evaluator for Program {
+    fn eval(&self, environment: &mut Environment) -> Option<Object> {
+        let mut result = None;
 
-    for statement in statements {
-        result = eval_statement(statement, environment);
+        for statement in self.statements.iter() {
+            result = statement.eval(environment);
 
-        if matches!(result, Some(Object::Return(_) | Object::Error(_))) {
-            return result;
-        }
-    }
-
-    result
-}
-
-fn eval_statement(statement: &Statement, environment: &mut Environment) -> Option<Object> {
-    match statement {
-        Statement::Expression { value } => eval_expression(value, environment),
-        Statement::Return { value } => {
-            let value = eval_expression(value, environment);
-            if matches!(value, Some(Object::Error(_))) {
-                value
-            } else {
-                value.map(Box::new).map(Object::Return)
+            if let Some(Object::Return(value)) = result {
+                return Some(*value);
+            } else if matches!(result, Some(Object::Error(_))) {
+                return result;
             }
         }
-        Statement::Let { name, value } => {
-            let value = eval_expression(value, environment)?;
-            if matches!(value, Object::Error(_)) {
-                return Some(value);
-            }
-
-            environment.set(name.clone(), value);
-
-            None
-        }
+        result
     }
 }
 
-fn eval_expression(expression: &Expression, environment: &mut Environment) -> Option<Object> {
-    match expression {
-        Expression::Integer(value) => Some(Object::Integer(*value)),
-        Expression::Boolean(value) => Some(native_boolean_to_boolean_object(*value)),
-        Expression::Identifier(name) => {
-            if let Some(value) = environment.get(name) {
-                Some(value.clone())
-            } else {
-                Some(Object::Error(format!("identifier not found: {}", name)))
+impl Evaluator for Vec<Statement> {
+    fn eval(&self, environment: &mut Environment) -> Option<Object> {
+        let mut result = None;
+
+        for statement in self {
+            result = statement.eval(environment);
+
+            if matches!(result, Some(Object::Return(_) | Object::Error(_))) {
+                return result;
             }
         }
-        Expression::String(value) => Some(Object::String(value.to_string())),
-        Expression::PrefixOperator {
-            operator,
-            expression,
-        } => {
-            let value = eval_expression(expression, environment)?;
-            if matches!(value, Object::Error(_)) {
-                return Some(value);
+
+        result
+    }
+}
+
+impl Evaluator for BlockStatement {
+    fn eval(&self, environment: &mut Environment) -> Option<Object> {
+        self.statements.eval(environment)
+    }
+}
+
+impl Evaluator for Statement {
+    fn eval(&self, environment: &mut Environment) -> Option<Object> {
+        match self {
+            Statement::Expression { value } => value.eval(environment),
+            Statement::Return { value } => {
+                let value = value.eval(environment);
+                if matches!(value, Some(Object::Error(_))) {
+                    value
+                } else {
+                    value.map(Box::new).map(Object::Return)
+                }
             }
-            Some(eval_prefix_expression(operator, value))
-        }
-        Expression::InfixOperator {
-            operator,
-            lh_expression,
-            rh_expression,
-        } => {
-            let lh_value = eval_expression(lh_expression, environment)?;
-            if matches!(lh_value, Object::Error(_)) {
-                return Some(lh_value);
-            }
-            let rh_value = eval_expression(rh_expression, environment)?;
-            if matches!(rh_value, Object::Error(_)) {
-                return Some(rh_value);
-            }
-            Some(eval_infix_expression(operator, lh_value, rh_value))
-        }
-        Expression::If {
-            condition,
-            consequence,
-            alternative,
-        } => {
-            let condition = eval_expression(condition, environment)?;
-            if matches!(condition, Object::Error(_)) {
-                return Some(condition);
-            }
-            if is_truthy(condition) {
-                eval_statements(&consequence.statements, environment)
-            } else if let Some(alternative) = alternative {
-                eval_statements(&alternative.statements, environment)
-            } else {
-                Some(NULL)
+            Statement::Let { name, value } => {
+                let value = value.eval(environment)?;
+                if matches!(value, Object::Error(_)) {
+                    return Some(value);
+                }
+
+                environment.set(name.clone(), value);
+
+                None
             }
         }
-        Expression::Function { arguments, body } => Some(Object::Function {
-            parameters: arguments.clone(),
-            environment: environment.clone(),
-            body: body.clone(),
-        }),
-        Expression::FunctionCall { name, arguments } => match *name.clone() {
+    }
+}
+
+impl Evaluator for Expression {
+    fn eval(&self, environment: &mut Environment) -> Option<Object> {
+        match self {
+            Expression::Integer(value) => Some((*value).into()),
+            Expression::Boolean(value) => Some((*value).into()),
+            Expression::String(value) => Some(value.clone().into()),
             Expression::Identifier(name) => {
-                if let Some(Object::Function {
-                    parameters,
-                    environment: inner_env,
-                    body,
-                }) = environment.get(&name)
-                {
-                    return eval_function(
-                        inner_env,
-                        &mut environment.clone(),
-                        Some(&name),
+                if let Some(value) = environment.get(name) {
+                    Some(value.clone())
+                } else {
+                    Some(Object::Error(format!("identifier not found: {}", name)))
+                }
+            }
+            Expression::PrefixOperator {
+                operator,
+                expression,
+            } => {
+                let value = expression.eval(environment)?;
+                if matches!(value, Object::Error(_)) {
+                    return Some(value);
+                }
+                Some(eval_prefix_expression(operator, value))
+            }
+            Expression::InfixOperator {
+                operator,
+                lh_expression,
+                rh_expression,
+            } => {
+                let lh_value = lh_expression.eval(environment)?;
+                if matches!(lh_value, Object::Error(_)) {
+                    return Some(lh_value);
+                }
+                let rh_value = rh_expression.eval(environment)?;
+                if matches!(rh_value, Object::Error(_)) {
+                    return Some(rh_value);
+                }
+                Some(eval_infix_expression(operator, lh_value, rh_value))
+            }
+            Expression::If {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                let condition = condition.eval(environment)?;
+                if matches!(condition, Object::Error(_)) {
+                    return Some(condition);
+                }
+                if condition.is_truthy() {
+                    consequence.eval(environment)
+                } else if let Some(alternative) = alternative {
+                    alternative.eval(environment)
+                } else {
+                    Some(NULL)
+                }
+            }
+            Expression::Function { arguments, body } => Some(Object::Function {
+                parameters: arguments.clone(),
+                environment: environment.clone(),
+                body: body.clone(),
+            }),
+            Expression::FunctionCall { name, arguments } => match *name.clone() {
+                Expression::Identifier(name) => {
+                    if let Some(Object::Function {
                         parameters,
-                        arguments,
+                        environment: inner_env,
                         body,
-                    );
-                }
-
-                if let Some(builtin) = builtins::Builtin::from_str(&name) {
-                    if let Object::Builtin(function) = builtin.get() {
-                        let evaluated_arguments = arguments
-                            .iter()
-                            .map(|argument| eval_expression(argument, environment))
-                            .collect::<Option<Vec<Object>>>()?;
-                        return function(&evaluated_arguments);
+                    }) = environment.get(&name)
+                    {
+                        return eval_function(
+                            inner_env,
+                            &mut environment.clone(),
+                            Some(&name),
+                            parameters,
+                            arguments,
+                            body,
+                        );
                     }
+
+                    if let Some(builtin) = builtins::Builtin::from_str(&name) {
+                        if let Object::Builtin(function) = builtin.get() {
+                            let evaluated_arguments = arguments
+                                .iter()
+                                .map(|argument| argument.eval(environment))
+                                .collect::<Option<Vec<Object>>>()?;
+                            return function(&evaluated_arguments);
+                        }
+                    }
+
+                    Some(Object::Error(format!("function not found: {}", name)))
+                }
+                Expression::Function {
+                    arguments: parameters,
+                    body,
+                } => eval_function(
+                    &Environment::new(),
+                    environment,
+                    None,
+                    &parameters,
+                    arguments,
+                    &body,
+                ),
+                _ => None,
+            },
+            Expression::Array(elements) => Some(Object::Array(
+                elements
+                    .iter()
+                    .map(|element| element.eval(environment))
+                    .collect::<Option<Vec<Object>>>()?,
+            )),
+            Expression::Index { left, index } => {
+                let left = left.eval(environment)?;
+                if matches!(left, Object::Error(_)) {
+                    return Some(left);
                 }
 
-                Some(Object::Error(format!("function not found: {}", name)))
-            }
-            Expression::Function {
-                arguments: parameters,
-                body,
-            } => eval_function(
-                &Environment::new(),
-                environment,
-                None,
-                &parameters,
-                arguments,
-                &body,
-            ),
-            _ => None,
-        },
-        Expression::Array(elements) => Some(Object::Array(
-            elements
-                .iter()
-                .map(|element| eval_expression(element, environment))
-                .collect::<Option<Vec<Object>>>()?,
-        )),
-        Expression::Index { left, index } => {
-            let left = eval_expression(left, environment)?;
-            if matches!(left, Object::Error(_)) {
-                return Some(left);
-            }
-
-            let index = eval_expression(index, environment)?;
-            if matches!(index, Object::Error(_)) {
-                return Some(index);
-            }
-
-            if let (Object::Array(array), Object::Integer(index)) = (&left, &index) {
-                Some(array.get(*index as usize).cloned().unwrap_or_default())
-            } else if let Object::Hash(map) = &left {
-                Some(map.get(&index).cloned().unwrap_or_default())
-            } else {
-                Some(Object::Error(format!(
-                    "index operator not supported: {} With index of: {}",
-                    left.kind(),
-                    index.kind(),
-                )))
-            }
-        }
-        Expression::HashLiteral(map) => {
-            let mut expression_map = BTreeMap::new();
-
-            for (key, value) in map {
-                let evaluated_key = eval_expression(key, environment)?;
-                if matches!(evaluated_key, Object::Error(_)) {
-                    return Some(evaluated_key);
+                let index = index.eval(environment)?;
+                if matches!(index, Object::Error(_)) {
+                    return Some(index);
                 }
 
-                let evaluated_value = eval_expression(value, environment)?;
-                if matches!(evaluated_value, Object::Error(_)) {
-                    return Some(evaluated_value);
+                if let (Object::Array(array), Object::Integer(index)) = (&left, &index) {
+                    Some(array.get(*index as usize).cloned().unwrap_or_default())
+                } else if let Object::Hash(map) = &left {
+                    Some(map.get(&index).cloned().unwrap_or_default())
+                } else {
+                    Some(Object::Error(format!(
+                        "index operator not supported: {} With index of: {}",
+                        left.kind(),
+                        index.kind(),
+                    )))
+                }
+            }
+            Expression::HashLiteral(map) => {
+                let mut expression_map = BTreeMap::new();
+
+                for (key, value) in map {
+                    let evaluated_key = key.eval(environment)?;
+                    if matches!(evaluated_key, Object::Error(_)) {
+                        return Some(evaluated_key);
+                    }
+
+                    let evaluated_value = value.eval(environment)?;
+                    if matches!(evaluated_value, Object::Error(_)) {
+                        return Some(evaluated_value);
+                    }
+
+                    expression_map.insert(evaluated_key, evaluated_value);
                 }
 
-                expression_map.insert(evaluated_key, evaluated_value);
+                Some(expression_map.into())
             }
-
-            Some(Object::Hash(expression_map))
         }
     }
 }
@@ -233,7 +249,7 @@ fn eval_function(
     let mut environment = fn_environment.new_child();
 
     for (param, expression) in parameters.iter().zip(arguments) {
-        let value = eval_expression(expression, outer_environment)?;
+        let value = expression.eval(outer_environment)?;
         if matches!(value, Object::Error(_)) {
             return Some(value);
         }
@@ -247,7 +263,7 @@ fn eval_function(
         );
     }
 
-    let value = eval_statements(&body.statements, &mut environment);
+    let value = body.eval(&mut environment);
 
     if let Some(Object::Return(value)) = value {
         Some(*value)
@@ -256,22 +272,18 @@ fn eval_function(
     }
 }
 
-fn is_truthy(value: Object) -> bool {
-    !matches!(value, FALSE | NULL)
-}
-
 fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -> Object {
     match (lh_value, rh_value) {
         (Object::Integer(lh_integer), Object::Integer(rh_integer)) => {
             eval_integer_infix_expression(operator, lh_integer, rh_integer)
         }
         (Object::Boolean(lh_boolean), Object::Boolean(rh_boolean)) => match operator {
-            Token::Equal => native_boolean_to_boolean_object(lh_boolean == rh_boolean),
-            Token::NotEqual => native_boolean_to_boolean_object(lh_boolean != rh_boolean),
+            Token::Equal => (lh_boolean == rh_boolean).into(),
+            Token::NotEqual => (lh_boolean != rh_boolean).into(),
             _ => Object::Error(format!("unknown operator: BOOLEAN {operator} BOOLEAN")),
         },
         (Object::String(lh_string), Object::String(rh_string)) => match operator {
-            Token::PlusSign => Object::String(format!("{lh_string}{rh_string}")),
+            Token::PlusSign => format!("{lh_string}{rh_string}").into(),
             _ => Object::Error(format!("unknown operator: STRING {operator} STRING")),
         },
         (lh_value, rh_value) => Object::Error(format!(
@@ -284,14 +296,14 @@ fn eval_infix_expression(operator: &Token, lh_value: Object, rh_value: Object) -
 
 fn eval_integer_infix_expression(operator: &Token, lh_integer: isize, rh_integer: isize) -> Object {
     match operator {
-        Token::PlusSign => Object::Integer(lh_integer + rh_integer),
-        Token::MinusSign => Object::Integer(lh_integer - rh_integer),
-        Token::Asterisk => Object::Integer(lh_integer * rh_integer),
-        Token::Slash => Object::Integer(lh_integer / rh_integer),
-        Token::LessThan => Object::Boolean(lh_integer < rh_integer),
-        Token::GreaterThan => Object::Boolean(lh_integer > rh_integer),
-        Token::Equal => Object::Boolean(lh_integer == rh_integer),
-        Token::NotEqual => Object::Boolean(lh_integer != rh_integer),
+        Token::PlusSign => (lh_integer + rh_integer).into(),
+        Token::MinusSign => (lh_integer - rh_integer).into(),
+        Token::Asterisk => (lh_integer * rh_integer).into(),
+        Token::Slash => (lh_integer / rh_integer).into(),
+        Token::LessThan => (lh_integer < rh_integer).into(),
+        Token::GreaterThan => (lh_integer > rh_integer).into(),
+        Token::Equal => (lh_integer == rh_integer).into(),
+        Token::NotEqual => (lh_integer != rh_integer).into(),
         _ => Object::Error(format!("unknown operator: INTEGER {operator} INTEGER")),
     }
 }
@@ -317,14 +329,6 @@ fn eval_minus_sign_expression(value: Object) -> Object {
     match value {
         Object::Integer(value) => Object::Integer(-value),
         _ => Object::Error(format!("unknown operator: -{}", value.kind())),
-    }
-}
-
-fn native_boolean_to_boolean_object(value: bool) -> Object {
-    if value {
-        TRUE
-    } else {
-        FALSE
     }
 }
 
@@ -359,10 +363,7 @@ mod tests {
             let program = parser.parse_program().expect("Failed to parse program");
             let mut environment = Environment::new();
 
-            assert_eq!(
-                eval_program(&program, &mut environment),
-                Some(Object::Integer(expected))
-            );
+            assert_eq!(program.eval(&mut environment), Some(expected.into()));
         }
     }
 
@@ -396,19 +397,19 @@ mod tests {
             let program = parser.parse_program().expect("Failed to parse program");
             let mut environment = Environment::new();
 
-            assert_eq!(eval_program(&program, &mut environment), Some(expected));
+            assert_eq!(program.eval(&mut environment), Some(expected));
         }
     }
 
     #[test]
     fn test_bang_operator() {
         let tests = &[
-            ("!true", false),
-            ("!false", true),
-            ("!5", false),
-            ("!!true", true),
-            ("!!false", false),
-            ("!!5", true),
+            ("!true", FALSE),
+            ("!false", TRUE),
+            ("!5", FALSE),
+            ("!!true", TRUE),
+            ("!!false", FALSE),
+            ("!!5", TRUE),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
@@ -416,23 +417,20 @@ mod tests {
             let program = parser.parse_program().expect("Failed to parse program");
             let mut environment = Environment::new();
 
-            assert_eq!(
-                eval_program(&program, &mut environment),
-                Some(Object::Boolean(expected))
-            );
+            assert_eq!(program.eval(&mut environment), Some(expected));
         }
     }
 
     #[test]
     fn test_if_else_expression() {
         let tests = &[
-            ("if (true) { 10 }", Object::Integer(10)),
+            ("if (true) { 10 }", 10.into()),
             ("if (false) { 10 }", NULL),
-            ("if (1) { 10 }", Object::Integer(10)),
-            ("if (1 < 2) { 10 }", Object::Integer(10)),
+            ("if (1) { 10 }", 10.into()),
+            ("if (1 < 2) { 10 }", 10.into()),
             ("if (1 > 2) { 10 }", NULL),
-            ("if (1 > 2) { 10 } else { 20 }", Object::Integer(20)),
-            ("if (1 < 2) { 10 } else { 20 }", Object::Integer(10)),
+            ("if (1 > 2) { 10 } else { 20 }", 20.into()),
+            ("if (1 < 2) { 10 } else { 20 }", 10.into()),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
@@ -441,7 +439,7 @@ mod tests {
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
+                program.eval(&mut environment),
                 Some(expected.clone()),
                 "test {}",
                 index
@@ -470,8 +468,8 @@ mod tests {
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
-                Some(Object::Integer(10)),
+                program.eval(&mut environment),
+                Some(10.into()),
                 "test {}",
                 index
             );
@@ -516,7 +514,7 @@ mod tests {
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
+                program.eval(&mut environment),
                 Some(Object::Error(expected.into())),
                 "test {}",
                 index
@@ -526,14 +524,11 @@ mod tests {
 
     #[test]
     fn test_let_statements() {
-        let tests = &[
-            ("let a = 5; a;", Object::Integer(5)),
-            ("let a = 5 * 5; a;", Object::Integer(25)),
-            ("let a = 5; let b = a; b;", Object::Integer(5)),
-            (
-                "let a = 5; let b = a; let c = a + b + 5; c;",
-                Object::Integer(15),
-            ),
+        let tests: &[(&str, Object)] = &[
+            ("let a = 5; a;", 5.into()),
+            ("let a = 5 * 5; a;", 25.into()),
+            ("let a = 5; let b = a; b;", 5.into()),
+            ("let a = 5; let b = a; let c = a + b + 5; c;", 15.into()),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
@@ -542,7 +537,7 @@ mod tests {
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
+                program.eval(&mut environment),
                 Some(expected.clone()),
                 "test {}",
                 index
@@ -558,7 +553,7 @@ mod tests {
         let program = parser.parse_program().expect("Failed to parse program");
         let mut environment = Environment::new();
 
-        let results = eval_program(&program, &mut environment).unwrap();
+        let results = program.eval(&mut environment).unwrap();
 
         assert!(matches!(results, Object::Function { .. }));
     }
@@ -583,8 +578,8 @@ mod tests {
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
-                Some(Object::Integer(expected)),
+                program.eval(&mut environment),
+                Some(expected.into()),
                 "test {}",
                 index
             );
@@ -604,10 +599,7 @@ mod tests {
         let program = parser.parse_program().expect("Failed to parse program");
         let mut environment = Environment::new();
 
-        assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::Integer(4)),
-        );
+        assert_eq!(program.eval(&mut environment), Some(4.into()),);
     }
 
     #[test]
@@ -632,10 +624,7 @@ fib(10);
         let program = parser.parse_program().expect("Failed to parse program");
         let mut environment = Environment::new();
 
-        assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::Integer(55)),
-        );
+        assert_eq!(program.eval(&mut environment), Some(55.into()),);
     }
 
     #[test]
@@ -655,7 +644,7 @@ test(5);
         let mut environment = Environment::new();
 
         assert_eq!(
-            eval_program(&program, &mut environment),
+            program.eval(&mut environment),
             Some(Object::Error("identifier not found: data".into())),
         );
     }
@@ -668,18 +657,15 @@ test(5);
         let program = parser.parse_program().expect("Failed to parse program");
         let mut environment = Environment::new();
 
-        assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::String("Hello World!".into())),
-        );
+        assert_eq!(program.eval(&mut environment), Some("Hello World!".into()),);
     }
 
     #[test]
     fn test_builtin_functions() {
         let tests = &[
-            (r#"len("")"#, Object::Integer(0)),
-            (r#"len("four")"#, Object::Integer(4)),
-            (r#"len("hello world")"#, Object::Integer(11)),
+            (r#"len("")"#, 0.into()),
+            (r#"len("four")"#, 4.into()),
+            (r#"len("hello world")"#, 11.into()),
             (
                 "len(1)",
                 Object::Error(r#"argument to "len" not supported, got INTEGER"#.into()),
@@ -688,24 +674,16 @@ test(5);
                 r#"len("one", "two")"#,
                 Object::Error(r#"wrong number of arguments. Got 2, expected 1"#.into()),
             ),
-            ("first([1, 2, 3])", Object::Integer(1)),
-            ("first([])", Object::Null),
-            ("last([1, 2, 3])", Object::Integer(3)),
-            ("last([])", Object::Null),
-            (
-                "rest([1, 2, 3])",
-                Object::Array(vec![Object::Integer(2), Object::Integer(3)]),
-            ),
-            ("rest([1])", Object::Array(vec![])),
-            ("rest([])", Object::Null),
+            ("first([1, 2, 3])", 1.into()),
+            ("first([])", NULL),
+            ("last([1, 2, 3])", 3.into()),
+            ("last([])", NULL),
+            ("rest([1, 2, 3])", vec![2.into(), 3.into()].into()),
+            ("rest([1])", vec![].into()),
+            ("rest([])", NULL),
             (
                 "push([1, 2, 3], true)",
-                Object::Array(vec![
-                    Object::Integer(1),
-                    Object::Integer(2),
-                    Object::Integer(3),
-                    Object::Boolean(true),
-                ]),
+                vec![1.into(), 2.into(), 3.into(), true.into()].into(),
             ),
         ];
 
@@ -715,7 +693,7 @@ test(5);
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
+                program.eval(&mut environment),
                 Some(expected.clone()),
                 "test {}",
                 index
@@ -732,34 +710,30 @@ test(5);
         let mut environment = Environment::new();
 
         assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::Array(vec![
-                Object::Integer(1),
-                Object::Integer(4),
-                Object::Integer(6)
-            ])),
+            program.eval(&mut environment),
+            Some(vec![1.into(), 4.into(), 6.into()].into()),
         );
     }
 
     #[test]
     fn test_array_index_expressions() {
         let tests = &[
-            ("[1, 2, 3][0]", Object::Integer(1)),
-            ("[1, 2, 3][1]", Object::Integer(2)),
-            ("[1, 2, 3][2]", Object::Integer(3)),
-            ("let i = 0; [1][i];", Object::Integer(1)),
-            ("[1, 2, 3][1 + 1];", Object::Integer(3)),
-            ("let myArray = [1, 2, 3]; myArray[2];", Object::Integer(3)),
+            ("[1, 2, 3][0]", 1.into()),
+            ("[1, 2, 3][1]", 2.into()),
+            ("[1, 2, 3][2]", 3.into()),
+            ("let i = 0; [1][i];", 1.into()),
+            ("[1, 2, 3][1 + 1];", 3.into()),
+            ("let myArray = [1, 2, 3]; myArray[2];", 3.into()),
             (
                 "let myArray = [1, 2, 3]; myArray[0] + myArray[1] + myArray[2];",
-                Object::Integer(6),
+                6.into(),
             ),
             (
                 "let myArray = [1, 2, 3]; let i = myArray[0]; myArray[i]",
-                Object::Integer(2),
+                2.into(),
             ),
-            ("[1, 2, 3][3]", Object::Null),
-            ("[1, 2, 3][-1]", Object::Null),
+            ("[1, 2, 3][3]", NULL),
+            ("[1, 2, 3][-1]", NULL),
         ];
 
         for (index, (input, expected)) in tests.into_iter().cloned().enumerate() {
@@ -768,7 +742,7 @@ test(5);
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
+                program.eval(&mut environment),
                 Some(expected.clone()),
                 "test {}",
                 index
@@ -801,12 +775,8 @@ map(data, squared);
         let mut environment = Environment::new();
 
         assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::Array(vec![
-                Object::Integer(1),
-                Object::Integer(4),
-                Object::Integer(9)
-            ])),
+            program.eval(&mut environment),
+            Some(vec![1.into(), 4.into(), 9.into()].into()),
         );
     }
 
@@ -835,10 +805,7 @@ sum([1, 2, 3, 4, 5]);
         let program = parser.parse_program().expect("Failed to parse program");
         let mut environment = Environment::new();
 
-        assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::Integer(15)),
-        );
+        assert_eq!(program.eval(&mut environment), Some(15.into()),);
     }
 
     #[test]
@@ -858,28 +825,31 @@ sum([1, 2, 3, 4, 5]);
         let mut environment = Environment::new();
 
         assert_eq!(
-            eval_program(&program, &mut environment),
-            Some(Object::Hash(BTreeMap::from([
-                (Object::String("one".into()), Object::Integer(1)),
-                (Object::String("two".into()), Object::Integer(2)),
-                (Object::String("three".into()), Object::Integer(3)),
-                (Object::Integer(4), Object::Integer(4)),
-                (Object::Boolean(true), Object::Integer(5)),
-                (Object::Boolean(false), Object::Integer(6))
-            ]))),
+            program.eval(&mut environment),
+            Some(
+                BTreeMap::from([
+                    ("one".into(), 1.into()),
+                    ("two".into(), 2.into()),
+                    ("three".into(), 3.into()),
+                    (4.into(), 4.into()),
+                    (TRUE, 5.into()),
+                    (FALSE, 6.into())
+                ])
+                .into()
+            ),
         );
     }
 
     #[test]
     fn test_hash_index_expressions() {
         let tests = &[
-            (r#"{"foo": 5}["foo"]"#, Object::Integer(5)),
-            (r#"{"foo": 5}["bar"]"#, Object::Null),
-            (r#"let key = "foo"; {"foo": 5}[key]"#, Object::Integer(5)),
-            (r#"{}["foo"]"#, Object::Null),
-            (r#"{5: 5}[5]"#, Object::Integer(5)),
-            (r#"{true: 5}[true]"#, Object::Integer(5)),
-            (r#"{false: 5}[false]"#, Object::Integer(5)),
+            (r#"{"foo": 5}["foo"]"#, 5.into()),
+            (r#"{"foo": 5}["bar"]"#, NULL),
+            (r#"let key = "foo"; {"foo": 5}[key]"#, 5.into()),
+            (r#"{}["foo"]"#, NULL),
+            (r#"{5: 5}[5]"#, 5.into()),
+            (r#"{true: 5}[true]"#, 5.into()),
+            (r#"{false: 5}[false]"#, 5.into()),
         ];
 
         for (input, expected) in tests.into_iter().cloned() {
@@ -888,7 +858,7 @@ sum([1, 2, 3, 4, 5]);
             let mut environment = Environment::new();
 
             assert_eq!(
-                eval_program(&program, &mut environment),
+                program.eval(&mut environment),
                 Some(expected.clone()),
                 "test {}",
                 input

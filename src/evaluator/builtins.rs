@@ -1,4 +1,4 @@
-use super::object::Object;
+use crate::evaluator::object::{Object, NULL};
 
 pub enum Builtin {
     Len,
@@ -48,8 +48,8 @@ fn builtin_len(arguments: &[Object]) -> Option<Object> {
     }
 
     match &arguments[0] {
-        Object::String(value) => Some(Object::Integer(value.len() as isize)),
-        Object::Array(value) => Some(Object::Integer(value.len() as isize)),
+        Object::String(value) => Some((value.len() as isize).into()),
+        Object::Array(value) => Some((value.len() as isize).into()),
         Object::Error(value) => Some(Object::Error(value.clone())),
         _ => Some(Object::Error(format!(
             "argument to \"len\" not supported, got {}",
@@ -62,7 +62,7 @@ fn builtin_puts(arguments: &[Object]) -> Option<Object> {
     for argument in arguments {
         println!("{}", argument.inspect());
     }
-    Some(Object::Null)
+    Some(NULL)
 }
 
 fn builtin_exit(arguments: &[Object]) -> Option<Object> {
@@ -130,10 +130,10 @@ fn builtin_rest(arguments: &[Object]) -> Option<Object> {
     match &arguments[0] {
         Object::Array(value) => {
             let Some((_, rest)) = value.split_at_checked(1) else {
-                return Some(Object::Null);
+                return Some(NULL);
             };
 
-            Some(Object::Array(rest.to_vec()))
+            Some(rest.to_vec().into())
         }
         Object::Error(value) => Some(Object::Error(value.clone())),
         _ => Some(Object::Error(format!(

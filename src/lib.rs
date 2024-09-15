@@ -4,7 +4,6 @@ mod ast;
 mod evaluator;
 mod lexer;
 mod parser;
-mod token;
 
 #[cfg(target_family = "wasm")]
 mod wasm;

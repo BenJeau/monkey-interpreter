@@ -2,8 +2,7 @@ use std::collections::BTreeMap;
 
 use crate::{
     ast::{BlockStatement, Expression, Statement},
-    lexer::Lexer,
-    token::Token,
+    lexer::{Lexer, Token},
 };
 
 #[derive(Default)]
@@ -83,18 +82,9 @@ impl Parser {
 
         self.next_token();
 
-        if self.peek_token != Some(Token::EqualSign) {
-            self.errors.push(format!(
-                "expected next token to be Equal, got {:?}",
-                self.peek_token,
-            ));
-            return None;
-        };
-
-        self.next_token();
+        self.expect_token(Token::EqualSign)?;
         self.next_token();
 
-        // TODO: unsure if the correct precendence here
         let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token == Some(Token::Semicolon) {
@@ -107,7 +97,6 @@ impl Parser {
     fn parse_return_statement(&mut self) -> Option<Statement> {
         self.next_token();
 
-        // TODO: unsure if the correct precendence here
         let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
         if self.peek_token == Some(Token::Semicolon) {
@@ -196,14 +185,7 @@ impl Parser {
             self.next_token();
             let key = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
-            if self.peek_token != Some(Token::Colon) {
-                self.errors.push(format!(
-                    "expected next token to be Colon, got {:?}",
-                    self.peek_token
-                ));
-                return None;
-            }
-            self.next_token();
+            self.expect_token(Token::Colon)?;
             self.next_token();
 
             let value = self.parse_expression(ExpressionPrecedence::Lowest)?;
@@ -211,21 +193,11 @@ impl Parser {
             map.insert(key, value);
 
             if self.peek_token != Some(Token::RightBrace) {
-                if self.peek_token != Some(Token::Comma) {
-                    self.errors.push(format!(
-                        "expected next token to be Comma, got {:?}",
-                        self.peek_token
-                    ));
-                    return None;
-                }
-                self.next_token();
+                self.expect_token(Token::Comma)?;
             }
         }
 
-        if self.peek_token != Some(Token::RightBrace) {
-            return None;
-        }
-        self.next_token();
+        self.expect_token(Token::RightBrace)?;
 
         Some(Expression::HashLiteral(map))
     }
@@ -252,11 +224,6 @@ impl Parser {
     }
 
     fn parse_prefix_expression(&mut self) -> Option<Expression> {
-        debug_assert!(matches!(
-            self.current_token,
-            Some(Token::MinusSign) | Some(Token::PlusSign) | Some(Token::ExclamationMark)
-        ));
-
         let operator = self.current_token.clone()?;
 
         self.next_token();
@@ -285,64 +252,25 @@ impl Parser {
 
         let expression = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
-        if self.peek_token != Some(Token::RightParen) {
-            return None;
-        };
-
-        self.next_token();
+        self.expect_token(Token::RightParen)?;
 
         Some(expression)
     }
 
     fn parse_if_expression(&mut self) -> Option<Expression> {
-        if self.peek_token != Some(Token::LeftParen) {
-            self.errors.push(format!(
-                "expected next token to be LeftParen, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
-
+        self.expect_token(Token::LeftParen)?;
         self.next_token();
-        self.next_token(); // TODO: why two times??
 
         let condition = self.parse_expression(ExpressionPrecedence::Lowest)?;
 
-        if self.peek_token != Some(Token::RightParen) {
-            self.errors.push(format!(
-                "expected next token to be RightParen, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
-
-        self.next_token();
-
-        if self.peek_token != Some(Token::LeftBrace) {
-            self.errors.push(format!(
-                "expected next token to be LeftBrace, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
-
-        self.next_token();
+        self.expect_token(Token::RightParen)?;
+        self.expect_token(Token::LeftBrace)?;
 
         let consequence = self.parse_block_statement()?;
 
         let alternative = if self.peek_token == Some(Token::Else) {
             self.next_token();
-
-            if self.peek_token != Some(Token::LeftBrace) {
-                self.errors.push(format!(
-                    "expected next token to be LeftBrace, got {:?}",
-                    self.peek_token
-                ));
-                return None;
-            };
-
-            self.next_token();
-
+            self.expect_token(Token::LeftBrace)?;
             self.parse_block_statement()
         } else {
             None
@@ -356,34 +284,13 @@ impl Parser {
     }
 
     fn parse_function_literal(&mut self) -> Option<Expression> {
-        if self.peek_token != Some(Token::LeftParen) {
-            self.errors.push(format!(
-                "expected next token to be LeftParen, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
+        self.expect_token(Token::LeftParen)?;
+        let arguments = self.parse_function_parameters()?;
 
-        self.next_token();
-
-        let parameters = self.parse_function_parameters()?;
-
-        if self.peek_token != Some(Token::LeftBrace) {
-            self.errors.push(format!(
-                "expected next token to be LeftBrace, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
-
-        self.next_token();
-
+        self.expect_token(Token::LeftBrace)?;
         let body = self.parse_block_statement()?;
 
-        Some(Expression::Function {
-            arguments: parameters,
-            body,
-        })
+        Some(Expression::Function { arguments, body })
     }
 
     fn parse_function_parameters(&mut self) -> Option<Vec<String>> {
@@ -420,15 +327,7 @@ impl Parser {
             };
         }
 
-        if self.peek_token != Some(Token::RightParen) {
-            self.errors.push(format!(
-                "expected next token to be RightParen, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
-
-        self.next_token();
+        self.expect_token(Token::RightParen)?;
 
         Some(parameters)
     }
@@ -458,15 +357,7 @@ impl Parser {
             arguments.push(self.parse_expression(ExpressionPrecedence::Lowest)?);
         }
 
-        if self.peek_token != Some(end_token) {
-            self.errors.push(format!(
-                "expected next token to be RightParen, got {:?}",
-                self.peek_token
-            ));
-            return None;
-        };
-
-        self.next_token();
+        self.expect_token(end_token)?;
 
         Some(arguments)
     }
@@ -488,19 +379,31 @@ impl Parser {
     }
 
     fn peek_precedence(&self) -> ExpressionPrecedence {
-        let Some(token) = self.peek_token.as_ref() else {
-            return Default::default();
-        };
-
-        token.precedence()
+        match self.peek_token.as_ref() {
+            Some(token) => token.precedence(),
+            None => Default::default(),
+        }
     }
 
     fn current_precedence(&self) -> ExpressionPrecedence {
-        let Some(token) = self.current_token.as_ref() else {
-            return Default::default();
+        match self.current_token.as_ref() {
+            Some(token) => token.precedence(),
+            None => Default::default(),
+        }
+    }
+
+    fn expect_token(&mut self, token: Token) -> Option<()> {
+        if self.peek_token.as_ref() != Some(&token) {
+            self.errors.push(format!(
+                "expected next token to be {token:?}, got {:?}",
+                self.peek_token
+            ));
+            return None;
         };
 
-        token.precedence()
+        self.next_token();
+
+        Some(())
     }
 }
 
@@ -520,8 +423,6 @@ impl std::fmt::Display for Program {
 
 #[cfg(test)]
 mod tests {
-    use crate::ast::BlockStatement;
-
     use super::*;
 
     #[test]
