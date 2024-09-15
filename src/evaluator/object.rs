@@ -32,8 +32,8 @@ pub enum Object {
 }
 
 impl Object {
-    pub fn is_truthy(self) -> bool {
-        !matches!(self, FALSE | NULL)
+    pub fn is_truthy(&self) -> bool {
+        self != &NULL && self != &FALSE
     }
 
     pub fn kind(&self) -> &'static str {
