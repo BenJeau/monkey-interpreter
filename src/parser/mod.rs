@@ -5,6 +5,10 @@ use crate::{
     lexer::{Lexer, Token},
 };
 
+mod program;
+
+pub use program::Program;
+
 #[derive(Default)]
 pub struct Parser {
     lexer: Lexer,
@@ -120,7 +124,7 @@ impl Parser {
         let mut left = match self.current_token.clone()? {
             Token::Integer(integer) => Some(integer.into()),
             Token::Identifier(identifier) => Some(Expression::Identifier(identifier)),
-            Token::String(string) => Some(Expression::String(string)),
+            Token::String(string) => Some(string.into()),
             Token::LeftBracket => self.parse_array_literal(),
             Token::LeftBrace => self.parse_hash_literal(),
             Token::True => Some(true.into()),
@@ -404,20 +408,6 @@ impl Parser {
         self.next_token();
 
         Some(())
-    }
-}
-
-#[derive(Default)]
-pub struct Program {
-    pub statements: Vec<Statement>,
-}
-
-impl std::fmt::Display for Program {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for statement in &self.statements {
-            write!(f, "{statement}")?;
-        }
-        Ok(())
     }
 }
 

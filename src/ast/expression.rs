@@ -127,7 +127,7 @@ impl From<isize> for Expression {
 
 impl From<String> for Expression {
     fn from(value: String) -> Self {
-        Self::Identifier(value)
+        Self::String(value)
     }
 }
 
