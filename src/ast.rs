@@ -119,7 +119,7 @@ impl std::fmt::Display for Expression {
                     write!(f, "false")
                 }
             }
-            Self::String(value) => write!(f, "{value}"),
+            Self::String(value) => write!(f, r#""{value}""#),
             Self::PrefixOperator {
                 operator,
                 expression,
